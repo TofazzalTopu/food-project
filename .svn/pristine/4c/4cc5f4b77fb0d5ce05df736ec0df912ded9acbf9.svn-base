@@ -1,0 +1,3 @@
+dataSource.url=jdbc:mysql://localhost/bdfe
+dataSource.username=bdfe
+dataSource.password=bdfe@bits321

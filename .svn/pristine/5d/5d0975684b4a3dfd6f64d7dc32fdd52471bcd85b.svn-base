@@ -1,0 +1,34 @@
+<plugin name='docuaccesscontrol' version='2.12' grailsVersion='1.3.7 &gt; *'>
+  <author>Documenta</author>
+  <title>Plugin summary/headline</title>
+  <description>\
+This plugin works on spring security
+</description>
+  <documentation>http://grails.org/plugin/docuaccesscontrol</documentation>
+  <resources>
+    <resource>BuildConfig</resource>
+    <resource>Config</resource>
+    <resource>DataSource</resource>
+    <resource>UrlMappings</resource>
+    <resource>com.docu.accesscontrol.FeatureControllerMappingController</resource>
+    <resource>com.docu.accesscontrol.FeatureInfoController</resource>
+    <resource>com.docu.accesscontrol.MenuGroupController</resource>
+    <resource>com.docu.accesscontrol.ModuleInfoController</resource>
+    <resource>com.docu.accesscontrol.RequestmapController</resource>
+    <resource>com.docu.accesscontrol.FeatureAction</resource>
+    <resource>com.docu.accesscontrol.FeatureControllerMapping</resource>
+    <resource>com.docu.accesscontrol.FeatureInfo</resource>
+    <resource>com.docu.accesscontrol.MenuGroup</resource>
+    <resource>com.docu.accesscontrol.MenuItem</resource>
+    <resource>com.docu.accesscontrol.MenuMap</resource>
+    <resource>com.docu.accesscontrol.ModuleInfo</resource>
+    <resource>com.docu.accesscontrol.UserRequestMap</resource>
+    <resource>com.docu.accesscontrol.FeatureControllerMappingService</resource>
+    <resource>com.docu.accesscontrol.FeatureInfoService</resource>
+    <resource>com.docu.accesscontrol.MenuGroupService</resource>
+    <resource>com.docu.accesscontrol.RequestMapService</resource>
+    <resource>com.docu.accesscontrol.UserMenuService</resource>
+  </resources>
+  <dependencies />
+  <behavior />
+</plugin>

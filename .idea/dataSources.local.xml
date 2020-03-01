@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal">
+    <data-source name="MySQL - bdfe_26042018@10.42.54.28" uuid="f57c49f5-f589-4b15-bca5-904825bf5d6b">
+      <database-info product="MySQL" version="5.6.14" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MYSQL" exact-version="5.6.14">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe_26042018</introspection-schemas>
+      <resolve-scope>*:bdfe_26042018</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe_26042018</unqualified-resolve-schemas>
+    </data-source>
+    <data-source name="MySQL - bdfe2805@10.42.54.28" uuid="8c3233da-0bf3-4adc-8211-6982bfef08f9">
+      <database-info product="MySQL" version="5.6.14" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MYSQL" exact-version="5.6.14">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe2805</introspection-schemas>
+      <resolve-scope>*:bdfe2805</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe2805</unqualified-resolve-schemas>
+    </data-source>
+    <data-source name="MySQL - bdfe1806@10.42.54.28" uuid="9c5be44c-156a-48d9-9132-6acdcb63be13">
+      <database-info product="MySQL" version="5.6.14" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MYSQL" exact-version="5.6.14">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe1806</introspection-schemas>
+      <resolve-scope>*:bdfe1806</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe1806</unqualified-resolve-schemas>
+    </data-source>
+    <data-source name="MySQL - bdfe0807@10.42.54.28" uuid="63229507-821a-4cb4-8f1f-f1188b559d5c">
+      <database-info product="MySQL" version="5.6.14" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MYSQL" exact-version="5.6.14">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe0807</introspection-schemas>
+      <resolve-scope>*:bdfe0807</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe0807</unqualified-resolve-schemas>
+    </data-source>
+    <data-source name="MySQL - bdfe2507@10.42.54.28" uuid="619a7fd9-9a08-4021-9297-44ba89afcfc2">
+      <database-info product="MySQL" version="5.6.14" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MYSQL" exact-version="5.6.14">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe2507</introspection-schemas>
+      <resolve-scope>*:bdfe2507</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe2507</unqualified-resolve-schemas>
+    </data-source>
+    <data-source name="MySQL - bdfe0828@10.42.54.28" uuid="a2c8471b-fade-445b-80a9-d2f88ff4f658">
+      <database-info product="MySQL" version="5.6.14" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MYSQL" exact-version="5.6.14">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe0828</introspection-schemas>
+      <resolve-scope>*:bdfe0828</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe0828</unqualified-resolve-schemas>
+    </data-source>
+    <data-source name="MySQL - bdfe0830dev@10.42.53.12" uuid="c17b5de5-7ee6-4ef2-b8f6-3fda79b84798">
+      <database-info product="MySQL" version="5.6.14" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MYSQL" exact-version="5.6.14">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe0830dev</introspection-schemas>
+      <resolve-scope>*:bdfe0830dev</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe0830dev</unqualified-resolve-schemas>
+    </data-source>
+    <data-source name="MySQL - bdfe0830uat@10.42.53.12" uuid="98c6527a-1602-4a9d-acc4-598792df8ceb">
+      <database-info product="MySQL" version="5.6.14" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MYSQL" exact-version="5.6.14">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe0830uat</introspection-schemas>
+      <resolve-scope>*:bdfe0830uat</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe0830uat</unqualified-resolve-schemas>
+    </data-source>
+    <data-source name="MySQL - bdfe010119DEV@10.42.65.12" uuid="5ec4713f-f66f-44de-971d-6c2796abe82b">
+      <database-info product="MySQL" version="5.5.60-MariaDB" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.46 ( Revision: 9cc87a48e75c2d2e87c1a293b2862ce651cb256e )" family="MARIADB" exact-version="5.5.60">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>bdfeapp</user-name>
+      <introspection-schemas>*:,bdfe010119DEV</introspection-schemas>
+      <resolve-scope>*:bdfe010119DEV</resolve-scope>
+      <unqualified-resolve-schemas>*:bdfe010119DEV</unqualified-resolve-schemas>
+    </data-source>
+  </component>
+</project>

@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="DailyZoneWiseDemand" language="groovy" pageWidth="2160" pageHeight="595" orientation="Landscape" columnWidth="2120" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isIgnorePagination="true">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="206"/>
+	<property name="ireport.y" value="0"/>
+	<style name="Crosstab Data Text" hAlign="Center"/>
+	<parameter name="zoneName" class="java.lang.String"/>
+	<parameter name="zoneId" class="java.lang.String"/>
+	<parameter name="date" class="java.lang.String"/>
+	<parameter name="masterProductId" class="java.lang.String"/>
+	<parameter name="masterProductName" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+    `customer_master`.`name`,
+    `customer_master`.`code`,
+    `customer_master`.`id` AS cid,
+    `master_product`.`name` AS `master`,
+    CONCAT(
+      `finish_product`.`name`,
+      ' (',
+      `finish_product`.`pack_size`,
+      ' ',
+      `measure_unit_configuration`.`name`,
+      ')'
+    ) AS `product`,
+    SUM(`invoice_details`.`quantity`) AS `quantity`,
+    ROUND(SUM(`invoice_details`.`quantity` * `invoice_details`.`unit_price`), 2) AS price,
+    `finish_product`.`id` AS pid,
+    (SELECT thana_upazila_pouroshova.`name`
+    FROM
+      `territory_sub_area`
+      INNER JOIN customer_territory_sub_area ON (customer_territory_sub_area.`territory_sub_area_id` = `territory_sub_area`.id)
+      INNER JOIN `thana_upazila_pouroshova`
+      ON (`thana_upazila_pouroshova`.`id` = `territory_sub_area`.`thana_upazila_pouroshova_id`)
+    WHERE customer_territory_sub_area.`customer_master_id` = `customer_master`.id
+    LIMIT 1) AS  thana_name
+  FROM `invoice_details`
+    INNER JOIN `invoice`
+      ON (`invoice_details`.`invoice_id` = `invoice`.`id`)
+    INNER JOIN `customer_master`
+      ON (`invoice`.`default_customer_id` = `customer_master`.`id`)
+    INNER JOIN `finish_product`
+      ON (`finish_product`.`id` = `invoice_details`.`finish_product_id`)
+    INNER JOIN `master_product`
+      ON (`master_product`.`id` = `finish_product`.`master_product_id`)
+    INNER JOIN `measure_unit_configuration`
+      ON (`measure_unit_configuration`.`id` = `finish_product`.`measure_unit_configuration_id`)
+  WHERE invoice.`is_active` = TRUE
+    AND invoice.`primary_demand_order_id` IS NOT NULL
+    AND $P{zoneId} IN
+    (SELECT `thana_upazila_pouroshova_id`
+    FROM
+      `territory_sub_area`
+      INNER JOIN customer_territory_sub_area ON (customer_territory_sub_area.`territory_sub_area_id` = `territory_sub_area`.id)
+    WHERE customer_territory_sub_area.`customer_master_id` = `customer_master`.id)
+    AND `customer_master`.`category_id` = 1 /* Branch Category */
+    AND DATE(`invoice`.`date_created`) = DATE(STR_TO_DATE($P{date},'%d-%m-%Y'))
+    AND `finish_product`.`master_product_id` LIKE (IF(LENGTH($P{masterProductId}) > 0, $P{masterProductId}, '%%'))
+    GROUP BY `invoice`.`default_customer_id`, `invoice_details`.`finish_product_id`
+    order by thana_name, `name`, `master`, product]]>
+	</queryString>
+	<field name="cid" class="java.lang.Long"/>
+	<field name="name" class="java.lang.String"/>
+	<field name="product" class="java.lang.String"/>
+	<field name="quantity" class="java.lang.Double"/>
+	<field name="pid" class="java.lang.Long"/>
+	<field name="master" class="java.lang.String"/>
+	<field name="price" class="java.lang.Double"/>
+	<group name="cid">
+		<groupExpression><![CDATA[$F{cid}]]></groupExpression>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="30" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="1160" height="30"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="20" isBold="true"/>
+				</textElement>
+				<text><![CDATA[BRAC Dairy & Food Project]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="45" splitType="Stretch">
+			<textField>
+				<reportElement x="579" y="0" width="144" height="25"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$P{zoneName}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="423" y="0" width="155" height="25"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Demand For:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="48" height="25"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date: ]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="48" y="0" width="151" height="25"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$P{date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToTallestObject" x="579" y="25" width="144" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$P{masterProductName}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement stretchType="RelativeToTallestObject" x="423" y="25" width="155" height="20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Master Product:]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<summary>
+		<band height="42" splitType="Stretch">
+			<crosstab>
+				<reportElement x="0" y="0" width="2120" height="42"/>
+				<crosstabDataset isDataPreSorted="true"/>
+				<crosstabHeaderCell>
+					<cellContents>
+						<line>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="76" height="87"/>
+						</line>
+						<staticText>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="76" height="43"/>
+							<box>
+								<topPen lineWidth="0.75" lineStyle="Solid"/>
+								<leftPen lineWidth="0.75" lineStyle="Solid"/>
+							</box>
+							<textElement verticalAlignment="Middle">
+								<font fontName="Arial" size="11"/>
+							</textElement>
+							<text><![CDATA[      Product]]></text>
+						</staticText>
+						<staticText>
+							<reportElement style="Crosstab Data Text" x="0" y="43" width="76" height="44"/>
+							<box>
+								<leftPen lineWidth="0.75"/>
+							</box>
+							<textElement textAlignment="Left" verticalAlignment="Middle">
+								<font fontName="Arial" size="11"/>
+							</textElement>
+							<text><![CDATA[    Branch]]></text>
+						</staticText>
+					</cellContents>
+				</crosstabHeaderCell>
+				<rowGroup name="name" width="76" totalPosition="End">
+					<bucket>
+						<bucketExpression class="java.lang.String"><![CDATA[$F{name}]]></bucketExpression>
+					</bucket>
+					<crosstabRowHeader>
+						<cellContents backcolor="#C3CFD9" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField>
+								<reportElement style="Crosstab Data Text" x="0" y="0" width="76" height="30"/>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA[$V{name}]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabRowHeader>
+					<crosstabTotalRowHeader>
+						<cellContents backcolor="#E6F3FF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<staticText>
+								<reportElement x="0" y="0" width="76" height="30"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="Arial" isBold="true"/>
+								</textElement>
+								<text><![CDATA[Total]]></text>
+							</staticText>
+						</cellContents>
+					</crosstabTotalRowHeader>
+				</rowGroup>
+				<columnGroup name="master" height="30" totalPosition="End">
+					<bucket>
+						<bucketExpression class="java.lang.String"><![CDATA[$F{master}]]></bucketExpression>
+					</bucket>
+					<crosstabColumnHeader>
+						<cellContents backcolor="#C3CFD9" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField>
+								<reportElement style="Crosstab Data Text" x="0" y="0" width="80" height="30"/>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA[$V{master}]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabColumnHeader>
+					<crosstabTotalColumnHeader>
+						<cellContents backcolor="#CCCCCC" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<staticText>
+								<reportElement x="0" y="0" width="91" height="87" forecolor="#000000"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="Arial"/>
+								</textElement>
+								<text><![CDATA[Invoice Amount]]></text>
+							</staticText>
+						</cellContents>
+					</crosstabTotalColumnHeader>
+				</columnGroup>
+				<columnGroup name="product" height="57" totalPosition="End">
+					<bucket>
+						<bucketExpression class="java.lang.String"><![CDATA[$F{product}]]></bucketExpression>
+					</bucket>
+					<crosstabColumnHeader>
+						<cellContents backcolor="#C3CFD9" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField>
+								<reportElement style="Crosstab Data Text" x="0" y="0" width="80" height="57"/>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA[$V{product}]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabColumnHeader>
+					<crosstabTotalColumnHeader>
+						<cellContents backcolor="#E6F3FF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+						</cellContents>
+					</crosstabTotalColumnHeader>
+				</columnGroup>
+				<measure name="quantityMeasure" class="java.lang.Double" calculation="Sum">
+					<measureExpression><![CDATA[$F{quantity}]]></measureExpression>
+				</measure>
+				<measure name="priceMeasure" class="java.lang.Double" calculation="Sum">
+					<measureExpression><![CDATA[$F{price}]]></measureExpression>
+				</measure>
+				<crosstabCell width="80" height="30">
+					<cellContents>
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="80" height="30"/>
+							<textElement verticalAlignment="Middle">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[$V{quantityMeasure}]]></textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="0" height="30" columnTotalGroup="product">
+					<cellContents backcolor="#E6F3FF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="91" height="30" columnTotalGroup="master">
+					<cellContents backcolor="#CCCCCC" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField isStretchWithOverflow="true" pattern="#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="91" height="30" forecolor="#000000"/>
+							<box rightPadding="2"/>
+							<textElement textAlignment="Right" verticalAlignment="Middle">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[$V{priceMeasure}]]></textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="80" height="30" rowTotalGroup="name">
+					<cellContents backcolor="#E6F3FF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="80" height="30"/>
+							<textElement verticalAlignment="Middle">
+								<font fontName="Arial" isBold="true"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[$V{quantityMeasure}]]></textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="0" height="30" rowTotalGroup="name" columnTotalGroup="product">
+					<cellContents backcolor="#E6F3FF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="91" height="30" rowTotalGroup="name" columnTotalGroup="master">
+					<cellContents backcolor="#CCCCCC" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField isStretchWithOverflow="true" pattern="#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="91" height="30" forecolor="#000000"/>
+							<box rightPadding="2"/>
+							<textElement textAlignment="Right" verticalAlignment="Middle">
+								<font fontName="Arial" isBold="true"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[$V{priceMeasure}]]></textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+			</crosstab>
+		</band>
+	</summary>
+</jasperReport>

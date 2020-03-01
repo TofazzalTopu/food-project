@@ -1,0 +1,534 @@
+package com.bits.bdfp.inventory.product
+
+import com.bits.bdfp.util.ApplicationConstants
+import groovy.sql.GroovyRowResult
+import org.springframework.transaction.annotation.Transactional
+import com.docu.common.Service
+import javax.sql.DataSource
+import groovy.sql.Sql
+import com.docu.common.Action
+
+class ProductPriceService extends Service {
+    static transactional = false
+    DataSource dataSource
+    Sql sql
+
+    @Transactional
+    public ProductPrice create(Object object) {
+        ProductPrice productPrice = (ProductPrice) object
+        if (productPrice.save(false)) {
+            return productPrice
+        }
+        return null
+    }
+
+    @Transactional
+    public boolean createStandardPrice(Map data) {
+        try{
+            ProductPrice productPrice = (ProductPrice) data.get(ProductPrice.class.simpleName)
+            List<ProductPriceProduct> productPriceProductList = (List) data.get(ProductPriceProduct.class.simpleName)
+            productPrice.save(false)
+            productPriceProductList.each { productPriceProduct ->
+                productPriceProduct.save(false)
+            }
+
+            List<TerritorySubAreaProductPrice> territorySubAreaProductPriceList = (List) data.get(TerritorySubAreaProductPrice.class.simpleName)
+            territorySubAreaProductPriceList.each { territorySubAreaProductPrice ->
+                territorySubAreaProductPrice.save(false)
+            }
+            return true
+        }catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional
+    public boolean createNegotiatedPrice(Map data) {
+        try {
+            ProductPrice productPrice = (ProductPrice) data.get(ProductPrice.class.simpleName)
+            List<ProductPriceProduct> productPriceProductList = (List) data.get(ProductPriceProduct.class.simpleName)
+            productPrice.save(false)
+            productPriceProductList.each { productPriceProduct ->
+                productPriceProduct.productPrice = productPrice
+                productPriceProduct.save(false)
+            }
+
+            List<CustomerProductPrice> customerProductPriceList = (List) data.get(CustomerProductPrice.class.simpleName)
+            customerProductPriceList.each { customerProductPrice ->
+                customerProductPrice.save(false)
+            }
+            return true
+        }catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional
+    public boolean updateStandardPrice(Map data, Object params) {
+        try {
+            Sql sql = new Sql(dataSource)
+            String query = """
+                DELETE `territory_sub_area_product_price` FROM `territory_sub_area_product_price`
+                    INNER JOIN `product_price` ON(`territory_sub_area_product_price`.`product_price_id` = `product_price`.`id`)
+                WHERE `product_price`.`id` =:productPriceId
+            """
+            sql.executeUpdate(query, params)
+
+            query = """
+                DELETE FROM `product_price_product`
+                WHERE `product_price_product`.`product_price_id` =:productPriceId
+            """
+            sql.executeUpdate(query, params)
+
+            ProductPrice productPrice = (ProductPrice) data.get(ProductPrice.class.simpleName)
+            List<ProductPriceProduct> productPriceProductListList = (List) data.get(ProductPriceProduct.class.simpleName)
+            productPrice.save(validate: false)
+            productPriceProductListList.each { productPriceProduct ->
+                productPriceProduct.save(validate: false)
+            }
+
+            List<TerritorySubAreaProductPrice> territorySubAreaProductPriceList = (List) data.get(TerritorySubAreaProductPrice.class.simpleName)
+            territorySubAreaProductPriceList.each { territorySubAreaProductPrice ->
+                territorySubAreaProductPrice.save(validate: false)
+            }
+            return true
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional
+    public boolean updateNegotiatedPrice(Map data, Object params) {
+        try {
+            Sql sql = new Sql(dataSource)
+            String query = """
+                DELETE`customer_product_price` FROM `customer_product_price`
+                    INNER JOIN `product_price` ON(`customer_product_price`.`product_price_id` = `product_price`.`id`)
+                 WHERE `product_price`.`id` =:productPriceId
+            """
+            sql.executeUpdate(query, params)
+
+            query = """
+                DELETE FROM `product_price_product`
+                WHERE `product_price_product`.`product_price_id` =:productPriceId
+            """
+            sql.executeUpdate(query, params)
+
+            ProductPrice productPrice = (ProductPrice) data.get(ProductPrice.class.simpleName)
+            List<ProductPriceProduct> productPriceProductListList = (List) data.get(ProductPriceProduct.class.simpleName)
+            productPrice.save(false)
+            productPriceProductListList.each { productPriceProduct ->
+                productPriceProduct.save(false)
+            }
+
+            List<CustomerProductPrice> customerProductPriceList = (List) data.get(CustomerProductPrice.class.simpleName)
+            customerProductPriceList.each { customerProductPrice ->
+                customerProductPrice.save(false)
+            }
+            return true
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+
+    @Transactional
+    public Integer update(Object object) {
+        ProductPrice productPrice = (ProductPrice) object
+        if (productPrice.save()) {
+            return new Integer(1)
+        } else {
+            return new Integer(0)
+        }
+    }
+
+    @Transactional
+    public Integer delete(Object object) {
+        ProductPrice productPrice = (ProductPrice) object
+        productPrice.delete()
+        return new Integer(1)
+    }
+
+    @Transactional(readOnly = true)
+    public Map getListForGrid(Action action) {
+        List<ProductPrice> objList = ProductPrice.withCriteria {
+            if (action.resultPerPage != -1) {
+                maxResults(action.resultPerPage)
+            }
+            firstResult(action.start)
+            order(action.sortCol, action.sortOrder)
+        }
+        long total = ProductPrice.count()
+        return [objList: objList, count: total]
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductPrice> list() {
+        return ProductPrice.list()
+    }
+
+    @Transactional(readOnly = true)
+    public ProductPrice read(Long id) {
+        return ProductPrice.read(id)
+    }
+
+    @Transactional(readOnly = true)
+    public ProductPrice search(String fieldName, String fieldValue) {
+        String query = "from ProductPrice as docu where docu." + fieldName + " = '" + fieldValue + "'"
+        return ProductPrice.find(query)
+    }
+
+    @Transactional(readOnly = true)
+    public Map finishProductListWithCategory(Object params) {
+        String query = """
+            SELECT `finish_product`.`id`, `finish_product`.`code`, `finish_product`.`name`
+            FROM finish_product
+                INNER JOIN main_product
+                    ON main_product.id = finish_product.main_product_id
+                INNER JOIN master_product
+                    ON master_product.id = finish_product.master_product_id
+            WHERE `business_unit_configuration_id` = ${params.businessUnitId}
+                AND finish_product.is_active = TRUE
+            ORDER BY master_product.`sequence_number`, main_product.`sequence_number`, `finish_product`.`sequence_number`
+        """
+        Sql sql = new Sql(dataSource)
+        List productList = sql.rows(query)
+
+        query = """
+            SELECT `id`, `code`, `name`, `short_name`
+            FROM `pricing_category`
+            WHERE `enterprise_configuration_id` = ${params.enterpriseId}
+        """
+        List categoryList = sql.rows(query)
+        return ['productList': productList, 'categoryList': categoryList]
+    }
+
+    @Transactional(readOnly = true)
+    public List flexListPriceNameByPriceType(Object params) {
+        sql = new Sql(dataSource)
+        String strSql = """
+            SELECT `product_price`.`id` AS `id`, `product_price`.`name`
+            FROM `product_price`
+            WHERE `product_price`.`product_pricing_type_id` = ${params.priceTypeId}
+        """
+        return sql.rows(strSql)
+    }
+
+    @Transactional(readOnly = true)
+    public Map searchPriceNameList(Object params) {
+        sql = new Sql(dataSource)
+        String searchCondition = ""
+        if (params.priceTypeId) {
+            searchCondition += " AND `product_price`.`product_pricing_type_id` = ${params.priceTypeId}"
+        }
+        if (params.status) {
+            searchCondition += " AND `product_price`.`is_active` = ${params.status}"
+        }
+        if (params.priceNameId) {
+            searchCondition += " AND `product_price`.`id` = '${params.priceNameId}'"
+        }
+        if (params.dateEffectiveFrom) {
+            searchCondition += " AND DATE(`product_price`.`date_effective_from`) = '${params.dateEffectiveFrom}'"
+        }
+        if (params.dateEffectiveTo) {
+            searchCondition += " AND DATE(`product_price`.`date_effective_to`) = '${params.dateEffectiveTo}'"
+        }
+        String strSql = """
+                SELECT DISTINCT `product_price`.`id`, `product_price`.`name`, `product_price`.`product_pricing_type_id` AS `pricingTypeId`,
+                        IFNULL(DATE_FORMAT(`product_price`.`date_effective_from`, '%d-%m-%Y'), '') AS dateEffectiveFrom,
+                        IFNULL(DATE_FORMAT(`product_price`.`date_effective_to`, '%d-%m-%Y'), '') AS dateEffectiveTo,
+                        IF(`product_price`.`is_active`,'Active', 'Inactive') AS `status`, `enterprise_configuration`.`name` AS `enterprise`,
+                        `business_unit_configuration`.`name` AS `businessUnit`,
+                        GROUP_CONCAT(DISTINCT IFNULL(`territory_configuration`.`name`, '')) AS `territory`,
+                        GROUP_CONCAT(DISTINCT IFNULL(`territory_sub_area`.`geo_location`, '')) AS `geoLocation`,
+                        GROUP_CONCAT(DISTINCT IFNULL(`territory_sub_area`.`para_or_locality`, '')) AS `paraOrLocality`,
+                        GROUP_CONCAT(DISTINCT IFNULL(`territory_sub_area`.`road`, '')) AS `road`,
+                        GROUP_CONCAT(DISTINCT IFNULL(`customer_master`.`code`, '')) AS `customerNumber`,
+                        GROUP_CONCAT(DISTINCT IFNULL(`customer_master`.`name`, '')) AS `customerName`
+                FROM `product_price`
+                    INNER JOIN `business_unit_configuration`
+                        ON (`product_price`.`business_unit_configuration_id` = `business_unit_configuration`.`id`)
+                    INNER JOIN `enterprise_configuration`
+                        ON (`product_price`.`enterprise_configuration_id` = `enterprise_configuration`.`id`)
+                    LEFT JOIN `territory_sub_area_product_price`
+                        ON (`territory_sub_area_product_price`.`product_price_id` = `product_price`.`id`)
+                    LEFT JOIN `territory_sub_area`
+                        ON (`territory_sub_area_product_price`.`territory_sub_area_id` = `territory_sub_area`.`id`)
+                    LEFT JOIN `territory_configuration`
+                        ON (`territory_sub_area`.`territory_configuration_id` = `territory_configuration`.`id`)
+                    LEFT JOIN `customer_product_price`
+                        ON (`customer_product_price`.`product_price_id` = `product_price`.`id`)
+                    LEFT JOIN `customer_master`
+                        ON (`customer_product_price`.`customer_master_id` = `customer_master`.`id`)
+                WHERE 1 = 1
+                ${searchCondition}
+                GROUP BY `product_price`.`id`
+        """
+
+        List resultList = sql.rows(strSql)
+        return [objList: resultList, count: resultList.size()]
+    }
+
+    @Transactional
+    public int activateProductPrice(Object params) {
+        try {
+            sql = new Sql(dataSource)
+            String strSql = """
+                UPDATE `product_price` SET is_active = TRUE, `last_updated` = NOW(), `user_updated_id` =:userUpdatedId
+                WHERE `is_active`= FALSE AND `product_price`.`name` =:priceName
+            """
+            return sql.executeUpdate(strSql, params)
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional
+    public int inactivateProductPrice(Object params) {
+        try{
+            sql = new Sql(dataSource)
+            String strSql = """
+                UPDATE `product_price` SET is_active = FALSE, `last_updated` = NOW(), `user_updated_id` =:userUpdatedId
+                WHERE `is_active`= TRUE AND `product_price`.`name` =:priceName
+            """
+            return sql.executeUpdate(strSql, params)
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Map productPriceCommonData(Object params) {
+        sql = new Sql(dataSource)
+        String strSql = """
+            SELECT `product_price`.`id`,`product_price`.`name` AS `priceName`, `product_pricing_type`.`id` AS `pricingTypeId`, `product_pricing_type`.`name` AS `pricingType`,
+                `business_unit_configuration`.`id` AS `businessUnitId`, `business_unit_configuration`.`name` AS `businessUnit`, `enterprise_configuration`.`id`  AS `enterpriseId`,
+                `enterprise_configuration`.`name`  AS `enterprise`,
+                DATE_FORMAT(`product_price`.`date_effective_from`, '%d-%m-%Y') AS `dateEffectiveFrom`,
+                IFNULL(DATE_FORMAT(`product_price`.`date_effective_to`, '%d-%m-%Y'), '') AS `dateEffectiveTo`,
+                IFNULL((SELECT DISTINCT `territory_sub_area`.`territory_configuration_id`
+                    FROM `territory_sub_area_product_price`
+                        INNER JOIN `territory_sub_area` ON (`territory_sub_area_product_price`.`territory_sub_area_id` = `territory_sub_area`.`id`)
+                    WHERE `territory_sub_area_product_price`.`product_price_id` = `product_price`.`id`), '') AS `territoryId`,
+                IFNULL((SELECT GROUP_CONCAT(DISTINCT `territory_sub_area`.`id`)
+                    FROM `territory_sub_area_product_price`
+                        INNER JOIN `territory_sub_area` ON (`territory_sub_area_product_price`.`territory_sub_area_id` = `territory_sub_area`.`id`)
+                    INNER JOIN `product_price` ON (`territory_sub_area_product_price`.`product_price_id` = `product_price`.`id`)
+                    WHERE `product_price`.`name` =:priceName AND `product_price`.`product_pricing_type_id` =:productPricingTypeId
+                    GROUP BY `product_price`.`name`, `product_price`.`product_pricing_type_id`), ''
+                    ) AS `geoLocationIds`,
+                IFNULL((SELECT GROUP_CONCAT(DISTINCT `customer_master`.`id`)
+                    FROM `customer_product_price`
+                        INNER JOIN `customer_master` ON (`customer_product_price`.`customer_master_id` = `customer_master`.`id`)
+                        INNER JOIN `product_price` ON (`customer_product_price`.`product_price_id` = `product_price`.`id`)
+                    WHERE `product_price`.`name` = :priceName AND `product_price`.`product_pricing_type_id` =:productPricingTypeId
+                    GROUP BY `product_price`.`name`, `product_price`.`product_pricing_type_id`), '') AS `customerIds`
+            FROM `product_price`
+                INNER JOIN `product_pricing_type` ON (`product_price`.`product_pricing_type_id` = `product_pricing_type`.`id`)
+                INNER JOIN `business_unit_configuration` ON (`product_price`.`business_unit_configuration_id` = `business_unit_configuration`.`id`)
+                INNER JOIN `enterprise_configuration` ON (`product_price`.`enterprise_configuration_id` = `enterprise_configuration`.`id`)
+            WHERE `product_price`.`id` =:priceName AND `product_price`.`product_pricing_type_id` =:productPricingTypeId
+            LIMIT 1;
+        """
+        List resultList = sql.rows(strSql, params)
+
+        strSql = """
+            SELECT DISTINCT `territory_sub_area`.`id`
+            FROM `territory_sub_area_product_price`
+                INNER JOIN `territory_sub_area` ON (`territory_sub_area_product_price`.`territory_sub_area_id` = `territory_sub_area`.`id`)
+                INNER JOIN `product_price` ON (`territory_sub_area_product_price`.`product_price_id` = `product_price`.`id`)
+            WHERE `product_price`.`id` =:priceName AND `product_price`.`product_pricing_type_id` =:productPricingTypeId
+        """
+        List geoLocationIdList = sql.rows(strSql, params)
+        String geoLocationIds = ""
+        if(geoLocationIdList && geoLocationIdList.size() > 0){
+            geoLocationIdList.each {
+                if(geoLocationIds != ""){
+                    geoLocationIds = geoLocationIds + "," + it.id.toString()
+                }else{
+                    geoLocationIds = it.id.toString()
+                }
+            }
+        }
+        if (resultList.size() > 0) {
+            GroovyRowResult firstResult = resultList.first()
+            return [id:firstResult.id, priceName: firstResult.priceName, pricingTypeId: firstResult.pricingTypeId, pricingType: firstResult.pricingType, businessUnitId: firstResult.businessUnitId, territoryId: firstResult.territoryId, geoLocationIds: geoLocationIds,
+                    businessUnit: firstResult.businessUnit, enterpriseId: firstResult.enterpriseId, enterprise: firstResult.enterprise, dateEffectiveFrom: firstResult.dateEffectiveFrom, dateEffectiveTo: firstResult.dateEffectiveTo, customerIds: firstResult.customerIds]
+        } else {
+            return [id: '',priceName: '', pricingTypeId: '', pricingType: '', businessUnitId: '', territoryId: '', geoLocationIds: '',
+                    businessUnit: '', enterpriseId: '', enterprise: '', dateEffectiveFrom: '', dateEffectiveTo: '', customerIds: '']
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List listProductPriceForUpdate(Object params) {
+        sql = new Sql(dataSource)
+        String strSql = """
+            SELECT `product_price_product`.`id`, `product_price_product`.`finish_product_id` AS `finishProductId`, `product_price_product`.`pricing_category_id` AS `pricingCategoryId`,`product_price_product`.`price`,
+                `product_price_product`.`vat_percentage` AS `vatPercentage`, `product_price_product`.`vat_amount` AS `vatAmount`, `product_price_product`.`total_amount` AS `totalAmount`
+            FROM `product_price_product` INNER JOIN `product_price` ON (`product_price_product`.`product_price_id` = `product_price`.`id`)
+            WHERE `product_price`.`id` = :priceName
+        """
+        return sql.rows(strSql, params)
+    }
+
+    @Transactional(readOnly = true)
+    public Map customerListForUpdate(Object params) {
+        sql = new Sql(dataSource)
+        String strSql = """
+                SELECT DISTINCT `customer_master`.`id`, `customer_master`.`code` AS `customerNumber`, `customer_master`.`name` AS `customerName`, `customer_master`.`present_address` AS `customerAddress`
+                FROM `customer_product_price`
+                    INNER JOIN `customer_master` ON (`customer_product_price`.`customer_master_id` = `customer_master`.`id`)
+                    INNER JOIN `product_price` ON (`customer_product_price`.`product_price_id` = `product_price`.`id`)
+                WHERE `product_price`.`name` = :priceName AND `product_price`.`product_pricing_type_id` = :priceTypeId
+        """
+
+        List resultList = sql.rows(strSql, params)
+        return [objList: resultList, count: resultList.size()]
+    }
+
+    @Transactional(readOnly = true)
+    public Map getProductPriceByCustomerAndProduct(long customerId, long productId, long territorySubAreaId = 0) {
+        try{
+            long partnerTypeId = -1
+            float productPriceWithVat = 0.00
+            float productPriceWithoutVat = 0.00
+            sql = new Sql(dataSource)
+            String condition = ""
+            if(territorySubAreaId > 0){
+                condition = """ AND `customer_territory_sub_area`.`territory_sub_area_id` = ${territorySubAreaId} """
+            }
+            String strSql = """
+                SELECT `pricing_category_id` FROM `customer_master`
+                WHERE `customer_master`.`id` = ${customerId}
+                LIMIT 1
+            """
+            List partnerTypeList = sql.rows(strSql)
+            if(partnerTypeList && partnerTypeList.size() > 0){
+                partnerTypeId = partnerTypeList.first().pricing_category_id
+            }
+
+            BigDecimal dpPrice = 0.00
+
+            if(partnerTypeId == ApplicationConstants.PRICING_CATEGORY_NEGOTIATED_ID){
+                // Negotiated Customer
+                strSql = """
+                    SELECT `product_price_product`.`total_amount` AS priceWithVat, `product_price_product`.`price` AS priceWithoutVat
+                    FROM `product_price_product`
+                        INNER JOIN `product_price` ON (`product_price_product`.`product_price_id` = `product_price`.`id`)
+                        INNER JOIN `customer_product_price` ON (`customer_product_price`.`product_price_id` = `product_price`.`id`)
+                        INNER JOIN customer_master on (`customer_product_price`.`customer_master_id` = `customer_master`.`id`)
+                    WHERE product_price.`is_active` = TRUE
+                        AND `product_price`.`product_pricing_type_id` = ${ApplicationConstants.PRODUCT_PRICING_TYPE_NEGOTIATED_ID}
+                        AND `customer_master`.`pricing_category_id` = ${ApplicationConstants.PRICING_CATEGORY_NEGOTIATED_ID}
+                        AND `customer_master`.`id`= ${customerId}
+                        AND `product_price_product`.`finish_product_id` = ${productId}
+                        AND DATE(NOW()) >= DATE(`product_price`.`date_effective_from`) AND DATE(NOW()) <= DATE(IFNULL(`product_price`.`date_effective_to`, NOW()))
+                    ORDER BY `product_price`.`date_effective_from` DESC
+                    LIMIT 1
+                """
+            } else{
+                // Non Negotiated ie DP/TP/MRP Customer
+                strSql = """
+                    SELECT `product_price_product`.`total_amount` AS priceWithVat, `product_price_product`.`price` AS priceWithoutVat
+                    FROM `customer_master`
+                        INNER JOIN `pricing_category` ON (`pricing_category`.id = `customer_master`.`pricing_category_id`)
+                        INNER JOIN `product_price_product` ON (`pricing_category`.`id` = `product_price_product`.`pricing_category_id`)
+                        INNER JOIN `product_price` ON (`product_price_product`.`product_price_id` = `product_price`.`id`
+                            AND `product_price`.`enterprise_configuration_id` = `customer_master`.`enterprise_configuration_id` AND product_price.`is_active` = TRUE)
+                        INNER JOIN `customer_territory_sub_area` ON (`customer_territory_sub_area`.`customer_master_id` = `customer_master`.`id`)
+                        INNER JOIN `territory_sub_area_product_price` ON (`customer_territory_sub_area`.`territory_sub_area_id` = `territory_sub_area_product_price`.`territory_sub_area_id`
+                            AND `territory_sub_area_product_price`.`product_price_id` = `product_price`.`id`)
+                    WHERE `customer_master`.`id`= ${customerId}
+                        AND `product_price_product`.`finish_product_id` = ${productId}
+                        AND DATE(NOW()) >= DATE(`product_price`.`date_effective_from`) AND DATE(NOW()) <= DATE(IFNULL(`product_price`.`date_effective_to`, NOW()))
+                        ${condition}
+                    ORDER BY `product_price`.`date_effective_from` DESC
+                    LIMIT 1
+                """
+            }
+
+            List resultList = sql.rows(strSql)
+            if(resultList && resultList.size() > 0){
+                productPriceWithVat = resultList.first().priceWithVat
+                productPriceWithoutVat = resultList.first().priceWithoutVat
+            }
+
+            if(partnerTypeId == ApplicationConstants.PRICING_CATEGORY_NEGOTIATED_ID){
+                dpPrice = productPriceWithVat
+            }else{
+                strSql = """
+                    SELECT `product_price_product`.`total_amount` AS priceWithVat
+                    FROM `customer_master`
+                        INNER JOIN `customer_territory_sub_area` ON (`customer_territory_sub_area`.`customer_master_id` = `customer_master`.`id`)
+                        INNER JOIN `territory_sub_area_product_price` ON (`customer_territory_sub_area`.`territory_sub_area_id` = `territory_sub_area_product_price`.`territory_sub_area_id`)
+                        INNER JOIN `product_price` ON (`territory_sub_area_product_price`.`product_price_id` = `product_price`.`id`
+                            AND `product_price`.`enterprise_configuration_id` = `customer_master`.`enterprise_configuration_id` AND product_price.`is_active` = TRUE)
+                        INNER JOIN `product_price_product` ON (`product_price`.`id` = `product_price_product`.`product_price_id`)
+                    WHERE `customer_master`.`id`= ${customerId}
+                        AND product_price_product.pricing_category_id = 1
+                        AND `product_price_product`.`finish_product_id` = ${productId}
+                        AND DATE(NOW()) >= DATE(`product_price`.`date_effective_from`) AND DATE(NOW()) <= DATE(IFNULL(`product_price`.`date_effective_to`, NOW()))
+                        ${condition}
+                    ORDER BY `product_price`.`date_effective_from` DESC
+                    LIMIT 1
+                """
+            }
+
+            resultList = sql.rows(strSql)
+            if(resultList && resultList.size() > 0){
+                dpPrice = resultList.first().priceWithVat
+            }
+
+            return [productPriceWithVat: productPriceWithVat, productPriceWithoutVat: productPriceWithoutVat, dpPrice: dpPrice]
+        } catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Map getDPProductPriceByCustomerAndProduct(long customerId, long productId, long territorySubAreaId = 0) {
+        try{
+            long partnerTypeId = -1
+            float productPriceWithVat = 0.00
+            float productPriceWithoutVat = 0.00
+            sql = new Sql(dataSource)
+            String condition = ""
+            if(territorySubAreaId > 0){
+                condition = """ AND `customer_territory_sub_area`.`territory_sub_area_id` = ${territorySubAreaId} """
+            }
+            String strSql = """
+                SELECT `product_price_product`.`total_amount` AS priceWithVat, `product_price_product`.`price` AS priceWithoutVat
+                FROM `product_price_product`
+                    INNER JOIN `product_price` ON (`product_price_product`.`product_price_id` = `product_price`.`id`
+                        AND `product_price`.`enterprise_configuration_id` = 1 AND product_price.`is_active` = TRUE)
+                    INNER JOIN `customer_territory_sub_area` ON (`customer_territory_sub_area`.`customer_master_id` = ${customerId})
+                    INNER JOIN `territory_sub_area_product_price` ON (`customer_territory_sub_area`.`territory_sub_area_id` = `territory_sub_area_product_price`.`territory_sub_area_id`
+                        AND `territory_sub_area_product_price`.`product_price_id` = `product_price`.`id`)
+                WHERE `product_price_product`.`pricing_category_id` = ${ApplicationConstants.DP_PARTNER_ID}
+                    AND `product_price_product`.`finish_product_id` = ${productId}
+                    AND DATE(NOW()) >= DATE(`product_price`.`date_effective_from`) AND DATE(NOW()) <= DATE(IFNULL(`product_price`.`date_effective_to`, NOW()))
+                    ${condition}
+                ORDER BY `product_price`.`date_effective_from` DESC
+                LIMIT 1
+            """
+
+            List resultList = sql.rows(strSql)
+            if(resultList && resultList.size() > 0){
+                productPriceWithVat = resultList.first().priceWithVat
+                productPriceWithoutVat = resultList.first().priceWithoutVat
+            }
+            return [productPriceWithVat: productPriceWithVat, productPriceWithoutVat: productPriceWithoutVat]
+        } catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+}

@@ -1,0 +1,317 @@
+package com.bits.bdfp.inventory.sales
+
+import com.bits.bdfp.inventory.demandorder.DemandOrderStatus
+import com.bits.bdfp.inventory.demandorder.Invoice
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrder
+import com.bits.bdfp.util.ApplicationConstants
+import com.docu.security.ApplicationUser
+import org.springframework.transaction.annotation.Transactional
+import com.docu.common.Service
+import javax.sql.DataSource
+import groovy.sql.Sql
+import com.docu.common.Action
+
+class LoadingSlipService extends Service {
+    static transactional = false
+    DataSource dataSource
+    Sql sql
+
+    @Transactional
+    public LoadingSlip create(Object map) {
+        try {
+            LoadingSlip loadingSlip = (LoadingSlip) map.get('loadingSlip')
+            loadingSlip = loadingSlip.save()
+
+            List<LoadingSlipDetails> loadingSlipDetailsList = map.get('loadingSlipDetailsList')
+            loadingSlipDetailsList.each { loadingSlipDetails ->
+                loadingSlipDetails.save()
+                // Update Primary Demand Order Status
+                PrimaryDemandOrder primaryDemandOrder = loadingSlipDetails.invoice.primaryDemandOrder
+                primaryDemandOrder.demandOrderStatus = DemandOrderStatus.IN_TRANSIT
+                primaryDemandOrder.save()
+            }
+            return loadingSlip
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional
+    public Integer update(Object object) {
+        LoadingSlip loadingSlip = (LoadingSlip) object
+        if (loadingSlip.save()) {
+            return new Integer(1)
+        } else {
+            return new Integer(0)
+        }
+    }
+
+    @Transactional
+    public Integer delete(Object object) {
+        LoadingSlip loadingSlip = (LoadingSlip) object
+        loadingSlip.delete()
+        return new Integer(1)
+    }
+
+    @Transactional
+    public boolean deleteLoadingSlipDetails(Object params) {
+        try {
+            Invoice invoice = Invoice.findByCode(params.invoiceCode)
+            if (invoice) {
+                PrimaryDemandOrder primaryDemandOrder = invoice.primaryDemandOrder
+                primaryDemandOrder.demandOrderStatus = DemandOrderStatus.READY_FOR_SHIPMENT
+                primaryDemandOrder.save()
+
+                if (params.loadingSlipId) {
+                    LoadingSlipDetails.executeUpdate("delete LoadingSlipDetails where id in (${params.loadingSlipId})")
+                }
+                return true
+            }else{
+                return false
+            }
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Map getListForGrid(Action action) {
+        List<LoadingSlip> objList = LoadingSlip.withCriteria {
+            if (action.resultPerPage != -1) {
+                maxResults(action.resultPerPage)
+            }
+            firstResult(action.start)
+            order(action.sortCol, action.sortOrder)
+        }
+        long total = LoadingSlip.count()
+        return [objList: objList, count: total]
+    }
+
+    @Transactional(readOnly = true)
+    public List<LoadingSlip> list() {
+        return LoadingSlip.list()
+    }
+
+    @Transactional(readOnly = true)
+    public LoadingSlip read(Long id) {
+        return LoadingSlip.read(id)
+    }
+
+    @Transactional(readOnly = true)
+    public LoadingSlip search(String fieldName, String fieldValue) {
+        String query = "from LoadingSlip as docu where docu." + fieldName + " = '" + fieldValue + "'"
+        return LoadingSlip.find(query)
+    }
+
+    @Transactional(readOnly = true)
+    public Map listInvoice(Action action, Object params) {
+        sql = new Sql(dataSource)
+        String strLIMIT = "";
+        String offSet = ""
+        String searchCondition = ""
+        String orderNo = ""
+        String date = ""
+        if (params.entId) {
+            searchCondition = """ AND `customer_master`.`enterprise_configuration_id` = ${params.entId}
+        """
+        }
+        if (params.invoiceNo) {
+            orderNo = """ AND `invoice`.`code`= '${params.invoiceNo}'
+        """
+        }
+        if (params.dateFrom && params.dateTo) {
+            date = """ AND DATE(`invoice`.`date_created`) BETWEEN STR_TO_DATE('${params.dateFrom}','${ApplicationConstants.DATE_FORMAT_DB}') AND STR_TO_DATE('${params.dateTo}','${ApplicationConstants.DATE_FORMAT_DB}')
+            """
+        }
+
+        if (action.resultPerPage != -1) {
+            strLIMIT = """LIMIT ${action.resultPerPage}"""
+            offSet = """
+                    OFFSET ${action.start}
+                   """
+        } else {
+            action.resultPerPage = -1;
+        }
+
+        String strSql = """
+            SELECT `invoice`.`id`, `invoice`.`code` AS `invoice_no`, DATE_FORMAT(`invoice`.`date_created`, '${ApplicationConstants.DATE_FORMAT_DB}') AS `date_created`,
+                `primary_demand_order`.`order_no`, CONCAT('[', `customer_master`.`code`, '] ', `customer_master`.`name`) AS `name`,
+                SUM(`invoice_details`.`quantity`) + IFNULL((SELECT SUM(quantity) FROM quantity_based_bonus WHERE invoice_id = invoice.id),0) AS `quantity`
+            FROM `invoice`
+                 INNER JOIN `primary_demand_order`
+                       ON (`primary_demand_order`.`id` = `invoice`.`primary_demand_order_id`)
+                 INNER JOIN `invoice_details`
+                       ON (`invoice_details`.`invoice_id` = `invoice`.`id`)
+                 INNER JOIN `customer_master`
+                     ON (`primary_demand_order`.`customer_order_for_id` = `customer_master`.`id`)
+            WHERE invoice.is_active = true
+                AND `primary_demand_order`.`demand_order_status` = '${DemandOrderStatus.READY_FOR_SHIPMENT}'
+                ${searchCondition}
+                ${orderNo}
+                ${date}
+            GROUP BY `invoice_details`.`invoice_id`
+            ${strLIMIT}
+            ${offSet}
+        """
+        List objList = sql.rows(strSql)
+        int resultCount = 0
+        if (objList && objList.size() > 0) {
+            resultCount = objList.size()
+        }
+        return [objList: objList, count: resultCount]
+    }
+
+    @Transactional(readOnly = true)
+    public List listOrderNo(Object params) {
+        String searchCondition = ""
+        if (params.entId) {
+            searchCondition = """ AND `customer_master`.`enterprise_configuration_id` = ${params.entId}
+        """
+        }
+        sql = new Sql(dataSource)
+        String strSql = """
+            SELECT `invoice`.id,`invoice`.`code` AS `invoice_no`, CONCAT('[', `customer_master`.`code`, '] ', `customer_master`.`name`) AS `name`
+            FROM `invoice`
+                INNER JOIN `primary_demand_order` ON (`primary_demand_order`.`id` = `invoice`.`primary_demand_order_id`)
+                INNER JOIN `customer_master` ON (`customer_master`.id = `primary_demand_order`.`customer_order_for_id`)
+            WHERE invoice.is_active = true
+                AND `primary_demand_order`.`demand_order_status` = '${DemandOrderStatus.READY_FOR_SHIPMENT}'
+                AND `invoice`.`code` LIKE '%${params.searchKey}%'
+                ${searchCondition}
+        """
+
+        List resultList = sql.rows(strSql)
+        return resultList
+    }
+
+    @Transactional(readOnly = true)
+    public Map getListPrintLoadingSlipStatusGrid(Action action, Object params, ApplicationUser applicationUser) {
+        sql = new Sql(dataSource)
+        String strLIMIT = "";
+        String offSet = ""
+        String loadingSlipNo = ""
+        String loadingSlipDate = ""
+
+        if (params.slipNo) {
+            loadingSlipNo = """  AND `loading_slip`.`loading_slip_no` = '${params.slipNo}'
+            """
+        }
+        if (params.orderDateFrom && params.orderDateTo) {
+            loadingSlipDate = """ AND DATE(`loading_slip`.`date_slip_date`)
+                 BETWEEN STR_TO_DATE('${params.orderDateFrom}','${
+                ApplicationConstants.DATE_FORMAT_DB
+            }')  AND STR_TO_DATE('${params.orderDateTo}','${ApplicationConstants.DATE_FORMAT_DB}')
+            """
+        }
+
+        if (action.resultPerPage != -1) {
+            strLIMIT = """LIMIT ${action.resultPerPage}"""
+            offSet = """
+                OFFSET ${action.start}
+            """
+        } else {
+            action.resultPerPage = -1;
+        }
+
+        String strSql = """
+            SELECT `loading_slip`.`id`, `loading_slip`.`delivery_truck_id`,
+                `loading_slip`.`loading_slip_no` AS `loadingSlipNumber`,
+                `delivery_truck`.`name` AS `vehicleName`,
+                `delivery_truck`.`vehicle_number` AS `vehicleNumber`,
+                `loading_slip`.`print_count` AS `printCount`,
+                `application_user`.`username` AS `userCreated`,
+                DATE_FORMAT(`loading_slip`.`date_slip_date`, '${ApplicationConstants.DATE_FORMAT_DB}') AS `loadingSlipDate`
+            FROM `loading_slip`
+                INNER JOIN `delivery_truck` ON (`delivery_truck`.`id` = `loading_slip`.`delivery_truck_id`)
+                INNER JOIN `application_user` ON (`application_user`.`id` = `loading_slip`.`user_created_id`)
+            WHERE 1=1
+                ${loadingSlipNo}
+                ${loadingSlipDate}
+            ORDER BY `loading_slip`.`id` DESC
+            ${strLIMIT}
+            ${offSet}
+        """
+        List objList = sql.rows(strSql)
+        int resultCount = 0
+        if (objList && objList.size() > 0) {
+            resultCount = objList.size()
+        }
+
+        return [objList: objList, count: resultCount]
+    }
+
+    @Transactional(readOnly = true)
+    public Map getLoadingSlipByInvoiceNumber(Object params) {
+
+        try {
+            sql = new Sql(dataSource)
+            String strSql = """
+                SELECT lsd.id AS id, inv.`code` AS invoiceNo, pdo.`order_no` AS primaryOrderNo,
+                    pdo.`demand_order_status` AS orderStatus, inv.invoice_amount AS invoiceAmount, CONCAT('[', customer_master.code, '] ', customer_master.name) AS customer,
+                    DATE_FORMAT(inv.`date_created`, '${ApplicationConstants.DATE_FORMAT_DB}') AS invoiceDate,
+                    ls.`loading_slip_no` AS loadingSlipNo,
+                    DATE_FORMAT(`ls`.`date_slip_date`, '${ApplicationConstants.DATE_FORMAT_DB}') AS `loadingSlipDate`
+                FROM invoice AS inv
+                    INNER JOIN `primary_demand_order` AS pdo
+                        ON (pdo.id = inv.`primary_demand_order_id`)
+                    INNER JOIN `loading_slip_details` AS lsd
+                        ON (lsd.`invoice_id` = inv.id)
+                    INNER JOIN loading_slip AS ls
+                        ON (lsd.`loading_slip_id` = ls.id)
+                    INNER JOIN customer_master ON (inv.default_customer_id = customer_master.id)
+                WHERE  inv.`is_active` = TRUE
+                    AND pdo.`demand_order_status` = '${DemandOrderStatus.IN_TRANSIT}'
+                    AND inv.code  = '${params.invoiceNo}'
+            """
+
+            List objList = sql.rows(strSql)
+            int resultCount = 0
+            if (objList && objList.size() > 0) {
+                resultCount = objList.size()
+            }
+
+            return [objList: objList, count: resultCount]
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List listLoadingSlipNo(String slipNo) {
+        try {
+            sql = new Sql(dataSource)
+            String strSql = """
+            SELECT `loading_slip`.`id`,
+                `loading_slip`.`loading_slip_no` AS `slipNo`,
+                `delivery_truck`.`name` AS `name`
+            FROM `loading_slip`
+                INNER JOIN `delivery_truck` ON (`delivery_truck`.`id` = `loading_slip`.`delivery_truck_id`)
+            WHERE `loading_slip`.`loading_slip_no` LIKE '%${slipNo}%'
+            ORDER BY `loading_slip`.`id` ASC
+        """
+            List resultList = sql.rows(strSql)
+            return resultList
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional
+    public Integer updatePrintLoadingSlipStatus(Object object) {
+        try {
+            Map map = (Map) object
+            List<LoadingSlip> loadingSlipList = map.printLoadingSlipStatusList
+            loadingSlipList.each {
+                it.save(false)
+            }
+            return new Integer(1)
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+}

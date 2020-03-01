@@ -1,0 +1,182 @@
+/*
+ * ****************************************************************
+ * Copyright � 2010 Documentatm (TM) Limited. All rights reserved.
+ * DOCUMENTA PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+ * This software is the confidential and proprietary information of
+ * Documentatm (TM) Limited ("Confidential Information").
+ * You shall not disclose such Confidential Information and shall use
+ * it only in accordance with the terms of the license agreement
+ * you entered into with Documentatm (TM) Limited.
+ * *****************************************************************
+ */
+
+html * {
+    margin: 0;
+    color:#184D77;
+    /*color:#000000;*/
+	direction:ltr;
+	font-family:"lucida grande",tahoma,verdana,arial,sans-serif;
+    font-size:11px;
+	text-align:left;
+  }
+  h1 {
+    color:#326E93;
+    /*color:#004A95;*/
+    direction:ltr;
+    font-family:"lucida grande",tahoma,verdana,arial,sans-serif;
+    font-size:20px;
+    text-align:left;
+  }
+  a {
+	text-decoration:none;
+	color:#4d4d4d;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  .element-title{
+    float:left;
+    width:150px;
+    padding-left:5px;
+    margin-top:2px;
+  }
+  .element-input{
+    float:left;
+    width:150px;
+    min-height:20px;
+    padding-left:6px;
+  }
+  .element-input-Amount{
+    text-align:right;
+  }
+  .element-title-block{
+    width:100px; 
+    float:left;
+    padding-left:5px;
+  }
+  .element-input-block{
+    width:100px;
+    float:left;
+    padding-left:6px;
+  }
+  .block-title{
+    font-weight:bold;
+    padding:4px 8px 4px 8px;
+    background-color:#D7DFE7;
+    /*background-color:#EEECD1;*/
+  }
+  .block-input{
+    font-weight:normal;
+    padding-bottom:8px;
+    padding-left:5px;
+    background-color:#F0F4F7;
+    /*background-color:#F7F5E8;*/
+    border-bottom:1px solid #BBBEC1;
+    /*border-bottom:1px solid #D5CF8C;*/
+  }
+
+  .clear{
+    clear:both;
+  }
+  .fieldset-group{
+    float:left;
+    margin-right:0px;
+  }
+  .fieldset-group:last-child{
+    margin-right: 0px;
+    float:right !important;
+  }
+  fieldset {
+	-moz-border-radius:7px 7px 7px 7px;
+    border:1px solid #92B7D0;
+	/*border:1px solid #BDC7D8;*/
+	padding:8px;
+    margin:10px 0px 0px 0px;
+    background-color:#E8F3FB;
+    /*background-color:#F3F3EC;*/
+  }
+  legend{
+    padding:6px 4px 6px 8px;
+	font:1em "lucida grande",tahoma,verdana,arial,sans-serif;
+	font-weight:bold;
+    color:#D5EEF5;
+    /*color:#FFFFFF;*/
+    border:1px solid #92B7D0;
+	/*border:1px solid #BDC7D8;*/
+    background-color:#326E93;
+	/*background-color:#317992;*/
+    width:215px;
+  }
+  .icon{
+    width:16px;
+    height:16px;
+    border:0px;
+    vertical-align:middle;
+    margin-top:-3px;
+  }
+.button-delete{
+    background-image:url(../images/plugincross.png);
+    background-repeat:no-repeat;
+    background-position: center center;
+    width: 10px;
+    height: 7px;
+    cursor: pointer;
+  }
+
+
+  .simple-table-css{
+    border-collapse:collapse;
+    border:0px solid #BBBEC1;
+    border-right:1px solid #C3E0F5;
+    border-top:1px solid #C3E0F5;
+    /*border:0px solid #D5CF8C;*/
+    /*border-right:1px solid #D5CF8C;*/
+    /*border-top:1px solid #D5CF8C;*/
+  }
+  .simple-table-css td{
+    border-bottom:1px solid #C3E0F5;
+    border-left:1px solid #C3E0F5;
+    /*border-bottom:1px solid #D5CF8C;*/
+    /*border-left:1px solid #D5CF8C;*/
+    padding: 5px;
+    color:#184D77;
+    /*color: #000000;*/
+    font-size: 11px;
+  }
+  .simple-table-css tr:first-child td{
+    font-weight: bold;
+    background-color:#E8F3FB;
+    /*background-color: #EEECD1;*/
+  }
+
+  .ui-jqgrid .ui-jqgrid-htable th div {
+    height: auto !important;
+    padding: 3px !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+  }
+
+  .jqgrid-editable-column{
+    background-color:#FDFDE7;
+  }
+
+  .jqgrow td a{
+    text-decoration: underline;
+    color: #184D77;
+  }
+
+  .buttons {
+    border-bottom:1px solid #BDC7D8;
+    border-top:1px solid #BDC7D8;
+    clear:right;
+    color:#666666;
+    font:12px/1.5 Verdana;
+    padding:5px 8px;
+  }
+
+/* IE 6 doesn't support max-height
+     * we use height instead, but this forces the menu to always be this tall
+     */
+
+
+

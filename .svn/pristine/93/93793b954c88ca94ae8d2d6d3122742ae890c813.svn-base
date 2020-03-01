@@ -1,0 +1,409 @@
+<style>
+.ui-jqgrid td input, .ui-jqgrid td select .ui-jqgrid td textarea {
+    margin: 0 !important;
+}
+</style>
+<script type="text/javascript" language="Javascript">
+
+    var invoiceIds = [];
+    var allInvoiceNo = [];
+    var invoiceSize = 0;
+    var truckId = -1;
+
+    $(document).ready(function () {
+        loadCustomer();
+
+        $("#gFormLoadingSlipSearch").validationEngine({   //    client side validation
+            isOverflown: true,
+            overflownDIV: ".ui-layout-center"
+        });
+        $("#gFormLoadingSlipSearch").validationEngine('attach');
+        reset_loadingSlip_form("#gFormLoadingSlipSearch");
+
+        loadOrderNo();
+        $("#invoice-grid").jqGrid({
+            url: '${resource(dir:'loadingSlip', file:'listInvoices')}?entId=' + $('#idEnterprise').val(),
+            datatype: "json",
+            colNames: [
+                '&#x2705',
+                'Id',
+                'Customer Name',
+                'legacy ID',
+                'Invoice No.',
+                'Invoice Date',
+                'Primary Order No',
+                'Quantity'
+
+            ],
+            colModel: [
+                {
+                    name: 'select', width: 20, align: 'center',
+                    formatter: cboxFormatter, formatoptions: {disabled: false},
+                    edittype: "checkbox", editoptions: {value: "true:false", defaultValue: "false"},
+                    stype: "select", searchoptions: {
+                    sopt: ["eq", "ne"],
+                    value: ":Any;true:true;false:false"
+                }
+                },
+                {name: 'id', index: 'id', width: 0, hidden: true},
+                {name: 'customerName', index: 'customerName', width: 75, align: 'left'},
+                {name: 'legacy_id', index: 'legacy_id', width: 75, align: 'left'},
+                {name: 'invoiceNo', index: 'invoiceNo', width: 75, align: 'left'},
+                {name: 'invoiceDate', index: 'invoiceDate', width: 65, align: 'left'},
+                {name: 'primaryOrderNo', index: 'orderNo', width: 75, align: 'left'},
+                {name: 'quantity', index: 'quantity', width: 55, align: 'left'}
+            ],
+            rowNum: 50,
+            rowList: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, -1],
+            pager: '#invoice-grid-pager',
+            sortname: 'id',
+            viewrecords: true,
+            sortorder: "desc",
+            caption: "All Invoice Information",
+            autowidth: true,
+//            width: 500,
+            height: 150,
+
+            scrollOffset: 0,
+            loadComplete: function () {
+            },
+            onSelectRow: function (rowid, status) {
+//                executeEditProduct(rowid);
+            }
+        });
+        $("#invoice-grid").jqGrid('navGrid', '#invoice-grid-pager', {
+            edit: false,
+            add: false,
+            del: false,
+            search: false
+        });
+//     $("#jqgrid-grid").gridResize({minWidth:350,maxWidth:800,minHeight:200});
+
+        $("#vehicle-grid").jqGrid({
+            %{--url: '${resource(dir:'deliveryTruck', file:'listTruck')}?entId=' + $('#idEnterprise').val(),--}%
+            datatype: "json",
+            colNames: [
+                '&#x2705',
+                'Id',
+                'Vehicle No',
+                'Name',
+                'Loading Capacity',
+                'Distribution Point',
+                'truckHeight',
+                'truckWidth',
+                'truckLength',
+                'Truck Size'
+            ],
+            colModel: [
+                {
+                    name: 'select', width: 20, align: 'center',
+                    formatter: cboxFormatter2, formatoptions: {disabled: false},
+                    edittype: "checkbox", editoptions: {value: "true:false", defaultValue: "false"},
+                    stype: "select", searchoptions: {
+                    sopt: ["eq", "ne"],
+                    value: ":Any;true:true;false:false"
+                }
+                },
+                {name: 'id', index: 'id', width: 0, hidden: true},
+                {name: 'vehicleNo', index: 'vehicleNo', width: 75, align: 'left'},
+                {name: 'name', index: 'name', width: 75, align: 'left'},
+                {name: 'capacity', index: 'capacity', width: 75, align: 'left'},
+                {name: 'distributionPoint', index: 'distributionPoint', width: 80, align: 'left'},
+                {name: 'truckHeight', index: 'truckHeight', width: 0, align: 'left', hidden: true},
+                {name: 'truckWidth', index: 'truckWidth', width: 0, align: 'left', hidden: true},
+                {name: 'truckLength', index: 'truckLength', width: 0, align: 'left', hidden: true},
+                {name: 'truckSize', index: 'truckSize', width: 80, align: 'left'}
+            ],
+            rowNum: 50,
+            rowList: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, -1],
+            pager: '#vehicle-grid-pager',
+            sortname: 'id',
+            viewrecords: true,
+            sortorder: "desc",
+            caption: "All Truck Information",
+            autowidth: true,
+//            width: 500,
+            height: 150,
+            scrollOffset: 0,
+            loadComplete: function () {
+                var ids = jQuery("#vehicle-grid").jqGrid('getDataIDs');
+                for (key in ids) {
+                    jQuery("#vehicle-grid").jqGrid('setRowData', ids[key], {
+                        truckSize: jQuery("#vehicle-grid").jqGrid('getCell', ids[key], 'truckHeight') + ' <b>X</b> ' +
+                        jQuery("#vehicle-grid").jqGrid('getCell', ids[key], 'truckWidth') + ' <b>X</b> ' +
+                        jQuery("#vehicle-grid").jqGrid('getCell', ids[key], 'truckLength')
+                    });
+                }
+            },
+            onSelectRow: function (rowid, status) {
+//                executeEditProduct(rowid);
+            }
+        });
+        $("#vehicle-grid").jqGrid('navGrid', '#vehicle-grid-pager', {
+            edit: false,
+            add: false,
+            del: false,
+            search: false
+        });
+
+        $(".ui-pg-selbox").children().each(function () {
+            if ($(this).val() == -1) {
+                $(this).html('All')
+            }
+
+        });
+//        resetAll();
+    });
+
+    function loadCustomer() {
+        $('#customerId').val('')
+        $('#customerList').val('')
+        jQuery('#customerList').autocomplete({
+            minLength: '2',
+            source: function (request, response) {
+                //EmployeeRegister.employeeCoreInfoId = null;
+                $('#popEmpDetails').html("");
+                $('#customerId').val('')
+                var data = {searchKey: request.term};
+                var url = '${resource(dir:'customerMaster', file:'listCustomer')}';
+                DocuAutoComplete.setSpinnerSelector('searchKey').execute(response, url, data, function (item) {
+                    item['label'] = item['legacy_id'] + " [" + item['code'] + "] " + item['name'];
+                    item['value'] = item['label'];
+                    return item;
+                });
+            },
+            select: function (event, ui) {
+                EmployeeRegister.setEmployeeInformation(ui.item.id, ui.item.value);
+//                EmployeeRegister.showEmployeeDetail();
+                $('#name').val(ui.item.name);
+//        CustomerRegister.showCustomerDetail(ui.item.account_no);
+            }
+        }).data("autocomplete")._renderItem = function (ul, item) {
+            var accountstype = "";
+            if (item.id) {
+                accountstype = '<div style="font-size: 9px; color:#326E93;">' + " Legacy ID: " + item.legacy_id + ", Code: " + item.code + ", Name: " + item.name + ",Address: " + item.present_address + '</div>';
+            }
+            return $("<li></li>").data("item.autocomplete", item).append('<a>' + item['label'] + '</a>' + accountstype).appendTo(ul);
+
+        }
+    }
+
+    var EmployeeRegister = {
+        employeeCoreInfoId: null,
+        showEmployeeDetail: function () {
+            if (!EmployeeRegister.employeeCoreInfoId) {
+                MessageRenderer.renderErrorText("Select an employee.", "Employee Detail Information");
+                return false;
+            }
+            var url = "${request.contextPath}/${params.controller}/edit";
+            var params = {id: EmployeeRegister.employeeCoreInfoId};
+            AjaxLoader.showTo('popEmpDetails');
+            DocuAjax.html(url, params, function (html) {
+                $('#popEmpDetails').html(html);
+            });
+        },
+        setEmployeeInformation: function (employeeCoreInfoId, employeeCoreInfo) {
+            $("#customerId").val(employeeCoreInfoId)
+            $("#employeeCoreInfo").val(employeeCoreInfo);
+        }
+    };
+
+
+    function cboxFormatter(cellvalue, options, rowObject) {
+        return '<input class="slip-checkbox" type="checkbox" value="' + options.rowId + '" ' + (cellvalue == 'true' ? ' checked="checked"' : '') +
+                'value="false" onchange="if(this.checked){addToInvoice(' + options.rowId + ')}else{removeFromInvoice(' + options.rowId + ')};"/>';
+    }
+
+    function cboxFormatter2(cellvalue, options, rowObject) {
+        return '<input type="checkbox" ' + (cellvalue == 'true' ? ' checked="checked"' : '') +
+                'value="false" onchange="if(this.checked){addToTruck(' + options.rowId + ')}else{removeFromTruck()};"/>';
+    }
+
+    function loadOrderNo() {
+        jQuery('#searchOrderKey').autocomplete({
+            minLength: '1',
+            source: function (request, response) {
+                //EmployeeRegister.employeeCoreInfoId = null;
+                var data = {searchKey: request.term};
+                var url = '${resource(dir:'loadingSlip', file:'listInvoiceForAutoComplete')}';
+                DocuAutoComplete.setSpinnerSelector('searchOrderKey').execute(response, url, data, function (item) {
+                    item['label'] = item['invoice_no'];
+                    item['value'] = item['label'];
+                    item['name'] = item['name'];
+                    return item;
+                });
+            },
+            select: function (event, ui) {
+                $("#searchOrderKey").val(ui.item.invoice_no);
+            }
+        }).data("autocomplete")._renderItem = function (ul, item) {
+            var accountstype = "";
+            if (item) {
+                accountstype = '<div style="font-size: 9px; color:#326E93;">' + " Customer Name: " + item.name + '</div>';
+            }
+            return $("<li></li>").data("item.autocomplete", item).append('<a>' + item['label'] + '</a>' + accountstype).appendTo(ul);
+
+        }
+    }
+
+    function loadDataByOrder() {
+        $("#invoice-grid").setGridParam({
+            url: '${resource(dir:'loadingSlip', file:'listInvoices')}?entId=' + $('#idEnterprise').val() + '&invoiceNo='
+            + $('#searchOrderKey').val() + '&dateFrom=' + $('#dateFrom').val() + '&dateTo=' + $('#dateTo').val() + '&customerId=' + $('#customerId').val() + '&legacyId=' + $('#legacyId').val()
+        });
+        $("#invoice-grid").trigger("reloadGrid");
+    }
+
+    function suggestVehicle() {
+        var invoiceNo = '';
+        $('.slip-checkbox').each(function () {
+            if (this.checked) {
+                if (invoiceNo) {
+                    invoiceNo = invoiceNo + ',' + $("#invoice-grid").getCell($(this).val(), 'invoiceNo');
+                } else {
+                    invoiceNo = $("#invoice-grid").getCell($(this).val(), 'invoiceNo');
+                }
+            }
+        });
+
+        if (invoiceNo == '') {
+            MessageRenderer.render({
+                "messageBody": "Please select at least one Invoice from list.",
+                "messageTitle": "Create Loading Slip",
+                "type": "0"
+            });
+            return false;
+        }
+
+        $("#vehicle-grid").setGridParam({
+            url: '${resource(dir:'deliveryTruck', file:'listTruck')}?invoiceNos=' + invoiceNo
+        });
+        $("#vehicle-grid").trigger("reloadGrid");
+    }
+
+    function addToInvoice(id) {
+        invoiceIds[invoiceSize] = id;
+        invoiceSize++;
+    }
+
+    function removeFromInvoice(id) {
+        if (invoiceSize == 2) {
+            var x = -1;
+            for (var i = 0; i < invoiceSize; i++) {
+                if (invoiceIds[i] != null && invoiceIds[i] != id) {
+                    x = invoiceIds[i];
+                }
+            }
+            invoiceSize--;
+            invoiceIds = [];
+            invoiceIds[0] = x;
+        } else {
+            for (var i = 0; i < invoiceSize; i++) {
+                if (invoiceIds[i] == id) {
+                    invoiceIds[i] = null;
+                    invoiceSize--;
+                }
+            }
+        }
+    }
+
+    function addToTruck(id) {
+        if (truckId == -1) {
+            truckId = id;
+        } else {
+            $('#vehicle-grid').jqGrid("setCell", truckId, 'select', false);
+            truckId = id;
+        }
+    }
+
+    function removeFromTruck() {
+        truckId = -1;
+    }
+
+    function createLoadingSlipPreCondition() {
+        trim_form();
+        if (!$("#gFormLoadingSlipSearch").validationEngine('validate')) {
+            return false;
+        }
+        return true;
+    }
+
+    function createLoadingSlip() {
+        if (!createLoadingSlipPreCondition()) {
+            return false;
+        }
+        if (invoiceIds == '') {
+            MessageRenderer.render({
+                "messageBody": "Please select at least one Invoice from list.",
+                "messageTitle": "Create Loading Slip",
+                "type": "0"
+            });
+            return false;
+        }
+
+        if (truckId == -1) {
+            MessageRenderer.render({
+                "messageBody": "Please select a Vehicle from list.",
+                "messageTitle": "Create Loading Slip",
+                "type": "0"
+            });
+            return false;
+        }
+
+        var data = '';
+        data = data + '&invoiceIds=' + invoiceIds;
+        data = data + '&truckId=' + truckId;
+        data = data + '&entId=' + $('#idEnterprise').val();
+
+        jQuery.ajax({
+            type: 'post',
+            data: data,
+            url: "${request.contextPath}/${params.controller}/create",
+            success: function (data, textStatus) {
+                MessageRenderer.render(data);
+                if (data.type == 1) {
+                    resetAll();
+                }
+            },
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                if (XMLHttpRequest.status = 0) {
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                } else {
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete: function () {
+            },
+            dataType: 'json'
+        });
+        return false;
+    }
+
+    function resetAll() {
+        invoiceIds = [];
+        invoiceSize = 0;
+        truckId = -1;
+        $('#searchOrderKey').val('');
+        $('#dateFrom').val('');
+        $('#dateTo').val('');
+        $("#invoice-grid").trigger("reloadGrid");
+        $("#vehicle-grid").jqGrid("clearGridData");
+    }
+
+    function reset_loadingSlip_form(formName) {
+        var enterprise = $("#idEnterprise").val();
+        $(formName).find(":input").not(":button, :submit, :reset, :checkbox, :radio").each(function () {
+            if (this.type == 'hidden') {
+                this.value = "";
+            } else {
+                this.value = this.defaultValue;
+            }
+        });
+        $(formName + ' select').val('');
+        $(formName + ' input').attr('readonly', false);
+//    $('input[type=checkbox]').attr('checked', false);
+        $(formName + ' input[name = create-button]').attr('value', 'Create');
+        $(formName + ' input[name = delete-button]').hide();
+        $("#idEnterprise").val(enterprise);
+    }
+</script>

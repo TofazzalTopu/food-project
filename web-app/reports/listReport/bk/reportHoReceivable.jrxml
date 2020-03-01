@@ -1,0 +1,809 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="reportHoReceivable" language="groovy" pageWidth="1008" pageHeight="612" orientation="Landscape" whenNoDataType="NoDataSection" columnWidth="968" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="c6a14ebf-fad5-430c-b912-9232a8e4edb3">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="customerCategoryId" class="java.lang.String"/>
+	<parameter name="salesChannelId" class="java.lang.String"/>
+	<parameter name="fromDate" class="java.lang.String"/>
+	<parameter name="toDate" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA["D:\\GrailsWorkspace\\BDFE\\web-app\\reports\\template\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="fromDateDisplay" class="java.lang.String"/>
+	<parameter name="toDateDisplay" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT *,
+  IFNULL((SELECT ROUND(ROUND(SUM(jd.debit_amount), 2) - ROUND(SUM(jd.credit_amount), 2), 2)
+          FROM chart_of_accounts_mapping coam
+            INNER JOIN chart_of_accounts coa
+              ON (coa.id = coam.chart_of_accounts_id)
+            INNER JOIN journal_details AS jd
+              ON (coa.id = jd.chart_of_accounts_id)
+          WHERE jd.is_active = TRUE
+                AND jd.prefix_code = code
+                AND jd.postfix_code = (SELECT code
+                                       FROM distribution_point
+                                       WHERE is_factory = TRUE)
+                AND coam.coa_type = 'ACCOUNTS_RECEIVABLE'
+                AND DATE(jd.date_created) <  $P{fromDate} ), 0)                                  AS openingDues,
+  IFNULL((SELECT ROUND(SUM(inv.invoice_amount), 2)
+          FROM invoice AS inv
+          WHERE inv.default_customer_id = cid
+                AND DATE(inv.date_created) BETWEEN  $P{fromDate} AND $P{toDate}
+          GROUP BY inv.default_customer_id
+         ), 0)  AS salesAmount,
+
+  (IFNULL((SELECT IFNULL(ROUND(SUM(jd.credit_amount), 2), 0)
+           FROM chart_of_accounts_mapping coam
+             INNER JOIN chart_of_accounts coa ON (coa.id = coam.chart_of_accounts_id)
+             INNER JOIN journal_details AS jd ON (coa.id = jd.chart_of_accounts_id)
+           WHERE jd.is_active = TRUE
+                 AND jd.prefix_code = CODE
+                 AND jd.postfix_code = (SELECT CODE
+                                        FROM distribution_point
+                                        WHERE is_factory = TRUE)
+                 AND coam.coa_type = 'ACCOUNTS_RECEIVABLE'
+                 AND DATE(jd.date_created) BETWEEN  $P{fromDate} AND $P{toDate}), 0) -
+
+   IFNULL((SELECT IFNULL(ROUND(SUM(jd.credit_amount), 2), 0)
+           FROM chart_of_accounts_mapping coam
+             INNER JOIN chart_of_accounts coa ON (coa.id = coam.chart_of_accounts_id)
+             INNER JOIN journal_details AS jd ON (coa.id = jd.chart_of_accounts_id)
+           WHERE jd.is_active = TRUE
+                 AND jd.prefix_code = CODE
+                 AND jd.postfix_code = (SELECT CODE
+                                        FROM distribution_point
+                                        WHERE is_factory = TRUE)
+                 AND coam.coa_type = 'SECURITY_DEPOSIT'
+                 AND DATE(jd.date_created) BETWEEN  $P{fromDate} AND $P{toDate}), 0))  AS collection,
+  IFNULL((SELECT IFNULL(ROUND(SUM(jd.debit_amount), 2), 0)
+          FROM chart_of_accounts_mapping coam
+            INNER JOIN chart_of_accounts coa ON (coa.id = coam.chart_of_accounts_id)
+            INNER JOIN journal_details jd ON (coa.id = jd.chart_of_accounts_id)
+          WHERE jd.is_active = TRUE
+                AND jd.prefix_code = CODE
+                AND jd.postfix_code = (SELECT CODE
+                                       FROM distribution_point
+                                       WHERE is_factory = TRUE)
+                AND coam.coa_type = 'ONE_PERCENT_EXPENSE'
+                AND DATE(jd.date_created) BETWEEN '2018-09-17' AND '2018-09-30'), 0) AS onePercent,
+
+  (IFNULL((SELECT IFNULL(ROUND(SUM(jd.debit_amount), 2), 0)
+           FROM chart_of_accounts_mapping coam
+             INNER JOIN chart_of_accounts coa ON (coa.id = coam.chart_of_accounts_id)
+             INNER JOIN journal_details AS jd ON (coa.id = jd.chart_of_accounts_id)
+           WHERE jd.is_active = TRUE
+                 AND jd.prefix_code = CODE
+                 AND jd.postfix_code = (SELECT CODE
+                                        FROM distribution_point
+                                        WHERE is_factory = TRUE)
+                 AND coam.coa_type = 'SALES_DISCOUNT'
+                 AND DATE(jd.date_created) BETWEEN  $P{fromDate} AND $P{toDate}), 0) +
+
+   IFNULL((SELECT IFNULL(ROUND(SUM(jd.debit_amount), 2), 0)
+           FROM chart_of_accounts_mapping AS coam
+             INNER JOIN chart_of_accounts AS coa ON (coa.id = coam.chart_of_accounts_id)
+             INNER JOIN journal_details AS jd ON (coa.id = jd.chart_of_accounts_id)
+           WHERE jd.is_active = TRUE
+                 AND jd.prefix_code = CODE
+                 AND jd.postfix_code = (SELECT CODE
+                                        FROM distribution_point
+                                        WHERE is_factory = TRUE)
+                 AND coam.coa_type = 'ADVERTISEMENT'
+                 AND DATE(jd.date_created) BETWEEN  $P{fromDate} AND $P{toDate}), 0))  AS tradeOffer,
+
+  IFNULL(ROUND((SELECT SUM(jd.`credit_amount`) - SUM(jd.`debit_amount`)
+                FROM journal_details AS jd
+                  INNER JOIN chart_of_accounts_mapping AS coam
+                    ON (jd.`chart_of_accounts_id` = coam.`chart_of_accounts_id`)
+                WHERE jd.is_active = TRUE
+                      AND jd.prefix_code = CODE
+                      AND jd.postfix_code = (SELECT CODE
+                                             FROM distribution_point
+                                             WHERE is_factory = TRUE)
+                      AND coam.coa_type = 'SECURITY_DEPOSIT'
+                      AND DATE(jd.date_created) < $P{fromDate} ), 2), 0)                        AS openingDeposit,
+
+  IFNULL(ROUND((SELECT SUM(jd.`credit_amount`) - SUM(jd.`debit_amount`)
+                FROM journal_details AS jd
+                  INNER JOIN chart_of_accounts_mapping AS coam
+                    ON (jd.`chart_of_accounts_id` = coam.`chart_of_accounts_id`)
+                WHERE jd.is_active = TRUE
+                      AND jd.prefix_code = CODE
+                      AND jd.postfix_code = (SELECT CODE
+                                             FROM distribution_point
+                                             WHERE is_factory = TRUE)
+                      AND coam.coa_type = 'SECURITY_DEPOSIT'
+                      AND DATE(jd.date_created) BETWEEN  $P{fromDate} AND $P{toDate}), 2), 0) AS forTheMonth,
+
+  IFNULL((SELECT IFNULL(ROUND(SUM(mrd.quantity * mrd.price), 2), 0)
+          FROM market_return AS mr
+            INNER JOIN market_return_details AS mrd ON mr.id = mrd.market_return_id
+            INNER JOIN customer_master AS cm ON cm.id = mr.primary_customer_id
+          WHERE 1 = 1
+                AND cm.id = cid
+                AND DATE(mr.date_created) BETWEEN  $P{fromDate} AND $P{toDate}
+          GROUP BY mr.primary_customer_id), 0) AS marketReturn,
+
+  IFNULL((SELECT IFNULL(ROUND(SUM(jd.debit_amount), 2), 0)
+          FROM chart_of_accounts_mapping coam
+            INNER JOIN chart_of_accounts coa ON (coa.id = coam.chart_of_accounts_id)
+            INNER JOIN journal_details jd ON (coa.id = jd.chart_of_accounts_id)
+          WHERE jd.is_active = TRUE
+                AND jd.prefix_code = CODE
+                AND jd.postfix_code = (SELECT CODE
+                                       FROM distribution_point
+                                       WHERE is_factory = TRUE)
+                AND coam.coa_type = 'SALES_RETURN'
+                AND DATE(jd.date_created) BETWEEN $P{fromDate} AND $P{toDate} ), 0)  AS acceptedValue,
+0   AS otherAdjustment
+
+
+FROM
+  (SELECT
+     cm.id   AS cid,
+     cm.code AS CODE,
+     cm.name AS customerName
+   FROM customer_master AS cm
+   WHERE cm.customer_sales_channel_id = $P{salesChannelId}
+         AND cm.category_id = $P{customerCategoryId}
+         AND cm.customer_level = 'PRIMARY'
+   GROUP BY cid, CODE
+  ) AS tbl;]]>
+	</queryString>
+	<field name="cid" class="java.lang.Long"/>
+	<field name="CODE" class="java.lang.String"/>
+	<field name="customerName" class="java.lang.String"/>
+	<field name="openingDues" class="java.lang.Double"/>
+	<field name="salesAmount" class="java.lang.Double"/>
+	<field name="collection" class="java.lang.Double"/>
+	<field name="onePercent" class="java.lang.Double"/>
+	<field name="tradeOffer" class="java.lang.Double"/>
+	<field name="openingDeposit" class="java.lang.Double"/>
+	<field name="forTheMonth" class="java.lang.Double"/>
+	<field name="marketReturn" class="java.lang.Double"/>
+	<field name="acceptedValue" class="java.lang.Double"/>
+	<field name="otherAdjustment" class="java.lang.Long"/>
+	<variable name="dues" class="java.lang.Double">
+		<variableExpression><![CDATA[$F{salesAmount} - $F{collection}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<variable name="closingDues" class="java.lang.Double">
+		<variableExpression><![CDATA[$F{openingDues} + $F{salesAmount} - $F{collection}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<variable name="actualReceivable" class="java.lang.Double">
+		<variableExpression><![CDATA[$V{closingDues} - $F{onePercent} - $F{tradeOffer} - $F{otherAdjustment}- $F{acceptedValue}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<variable name="netReceivable" class="java.lang.Double" incrementType="Report">
+		<variableExpression><![CDATA[$V{actualReceivable} - $F{openingDeposit} - $F{forTheMonth}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<variable name="cumulative" class="java.lang.Double">
+		<variableExpression><![CDATA[$F{openingDeposit} + $F{forTheMonth}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<variable name="mrDeference" class="java.lang.Double">
+		<variableExpression><![CDATA[$F{marketReturn} - $F{acceptedValue}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="56" splitType="Stretch">
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="1" y="19" width="967" height="18" uuid="ed10a56f-a174-4067-9c8c-3ef64fa3507f"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" isBold="true" pdfFontName="Helvetica-Bold" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Ho Receivable Report]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="757" y="38" width="106" height="18" uuid="9ba32c0f-4ae1-47f1-b553-6f3e365468b1"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{fromDateDisplay}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="913" y="38" width="55" height="18" uuid="2e96f6fe-72b8-4ca7-b2e3-f6a45954cff1"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{toDateDisplay}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="863" y="38" width="50" height="18" uuid="2b4bdce5-00bc-4e20-8160-feb1fe23f731"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="8" isBold="true" pdfFontName="Helvetica-Bold" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[To Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="699" y="38" width="58" height="18" uuid="bdbb787f-031c-48b5-887a-04fa439d053f"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="8" isBold="true" pdfFontName="Helvetica-Bold" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[From Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="1" y="1" width="967" height="18" uuid="5af30fc5-9498-4996-b023-a5b0386e5e22"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" isBold="true" pdfFontName="Helvetica-Bold" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[BRAC Dairy & Food Project]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="39" splitType="Stretch">
+			<staticText>
+				<reportElement x="1" y="1" width="69" height="38" uuid="643f28cc-341d-49cd-a1f0-9a831f1d3519"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Customer Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="70" y="1" width="64" height="38" uuid="d204f538-8224-418e-bc31-40cb3358ade3"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Opening Dues]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="134" y="19" width="68" height="20" uuid="ca755bf7-8028-4eab-b2b8-8f22f12baab9"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Sales Amount]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="202" y="19" width="65" height="20" uuid="a7864413-d4d2-44c1-8ae2-7445d4f3a101"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Collection]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="543" y="19" width="49" height="20" uuid="91babd82-0d37-4ac0-818a-aa70ccc9b62a"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Return Value]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="592" y="19" width="45" height="20" uuid="808015d2-c9ab-4d66-a14c-10cd1cc19083"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Accepted Value]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="913" y="1" width="55" height="38" uuid="d0649977-da88-4731-bf76-3fff16315073"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Net Receivable]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="854" y="19" width="59" height="20" uuid="2afe1077-451b-46b0-be46-65a943c7414c"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Cumulative]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="744" y="19" width="55" height="20" uuid="f4cb708e-21a2-4bb2-bb8c-13ca750359b0"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Opening]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="267" y="19" width="67" height="20" uuid="4d9f08ed-722a-49e2-ae52-991189677246"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Dues]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="334" y="1" width="65" height="38" uuid="583c41d4-94fb-4313-9b00-7b55fb2ea168"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Closing Dues]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="637" y="19" width="45" height="20" uuid="c3dceb20-49ad-4916-b467-a70107ae03a8"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Deference]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="399" y="1" width="40" height="38" uuid="af742f0f-8485-4fb0-9e02-5e8dbfb6f28f"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Leak Short (%)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="543" y="1" width="139" height="18" uuid="c58aa908-d002-4f4a-ad3f-46d6d51db3df"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Market Return]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="744" y="1" width="169" height="18" uuid="440f3d5b-a695-4178-a096-456677041174"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Security Deposit]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="134" y="1" width="200" height="18" uuid="bf3259db-5fcf-4514-9d44-ff1dad143250"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[For The Period]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="799" y="19" width="55" height="20" uuid="d7717924-a0e0-4b76-a973-790602db63c2"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[For The Period]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="682" y="1" width="62" height="38" uuid="94bdb479-54e2-41d9-82ab-0aeeb238224c"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Actual Receivable]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="439" y="1" width="52" height="38" uuid="571df849-6320-46a8-9a39-307551b921e4"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Trade Offer]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="491" y="1" width="52" height="38" uuid="22ea32cc-1350-4d79-8d94-96bb0d86ecd7"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Other Adjustment]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="1" y="0" width="69" height="16" uuid="a00d714e-eb88-48ab-9f26-62b119296092"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{customerName}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="134" y="0" width="68" height="16" uuid="52279ab0-a547-4f76-a596-2ced289bc802"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{salesAmount}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="202" y="0" width="65" height="16" uuid="c64fa256-20ea-4873-a7d1-44ae6b9b3268"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{collection}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="543" y="0" width="49" height="16" uuid="c08993e9-01c8-4eb6-9296-ff1ad9727d92"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($F{marketReturn})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="592" y="0" width="45" height="16" uuid="c4a54aa7-bb6a-4544-8370-223e720ca882"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($F{acceptedValue})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="682" y="0" width="62" height="16" uuid="da21840b-96aa-44af-b341-fb82840ea725"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($V{actualReceivable})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="913" y="0" width="55" height="16" uuid="f72a119f-cb45-4c4d-94ff-93ee4a383ade"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($V{netReceivable})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="744" y="0" width="55" height="16" uuid="30f30a9b-63d7-4055-b821-93be584fce4c"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($F{openingDeposit})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="854" y="0" width="59" height="16" uuid="4819b1e8-2c5b-48bb-b7e7-ccc5b503dcdd"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($V{cumulative})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="267" y="0" width="67" height="16" uuid="e1701649-2f06-4387-bec3-5e3b6711c8bb"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($V{dues})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="637" y="0" width="45" height="16" uuid="49733f79-0f2d-4496-84a8-50fa90d28a58"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{mrDeference}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="399" y="0" width="40" height="16" uuid="62aa124d-e2f2-4771-82db-d6768b530a04"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($F{onePercent})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="799" y="0" width="55" height="16" uuid="5c379ba7-af91-4724-b33e-6ed475619396"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($F{forTheMonth})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="334" y="0" width="65" height="16" uuid="fbce2517-9e5b-4ccd-897e-45f663a8d881"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("###0.00").format($V{closingDues})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00;-###0.00" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="70" y="0" width="64" height="16" uuid="d1607788-f032-45d5-b68e-588102ad59ed"/>
+				<box rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{openingDues}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="439" y="0" width="52" height="16" uuid="d95e48a5-d3a5-437c-983f-27aba64cc64d"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{tradeOffer}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="491" y="0" width="52" height="16" uuid="d073ff87-1f31-4024-8521-49982c9ff79d"/>
+				<box leftPadding="2" rightPadding="2">
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{otherAdjustment}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="21" splitType="Stretch">
+			<subreport>
+				<reportElement x="98" y="1" width="659" height="20" uuid="48e4e3f6-442b-4e46-81c4-868556b4283f"/>
+				<subreportParameter name="print_date"/>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "footer.jasper"]]></subreportExpression>
+			</subreport>
+			<textField>
+				<reportElement x="784" y="2" width="80" height="16" uuid="e03882f8-cd78-4bda-8a23-2d6152c1cb83"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="864" y="2" width="40" height="16" uuid="f9520c67-d9fa-407d-82c9-4c4fca2d7c03"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="32" splitType="Stretch"/>
+	</summary>
+	<noData>
+		<band height="26">
+			<staticText>
+				<reportElement x="259" y="0" width="229" height="26" uuid="3d14c4f8-c847-4868-93e1-add5e8202108"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[No Data Found]]></text>
+			</staticText>
+		</band>
+	</noData>
+</jasperReport>

@@ -1,0 +1,3 @@
+
+
+<g:render template="list"/>

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="print_primary_delivery_challan" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+	<property name="ireport.zoom" value="1.2100000000000004"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA["E:\\Project\\bdfe\\web-app\\reports\\invoice\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="invoiceNo" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT invoice.id, invoice.code AS invoice_no,DATE_FORMAT(`invoice`.`date_created`, "%d/%m/%Y %h:%i %p")  AS "invoiceDate",
+distribution_point.name AS "dpName", CONCAT(distribution_point.address, ', ', distribution_point.name) AS "dpAddress", CONCAT('Email: ', distribution_point.email) AS "dpEmail",
+distribution_point.code AS "dpCode", CONCAT('Party: ', customer_shipping_address.address) AS "customerAddress", IFNULL(invoice.discount, 0) AS "actualDiscountValue",
+IFNULL(invoice.service_charge, 0) AS "actualOtherChargeValue",
+IFNULL(invoice.vat, 0) AS "actualVatValue",
+invoice.discount_name AS "discountName",
+invoice.other_charge_name AS "otherChargeName",
+invoice.vat_tax_name AS "vatTaxName"
+FROM invoice
+INNER JOIN primary_demand_order ON (primary_demand_order.id = invoice.primary_demand_order_id)
+LEFT JOIN customer_shipping_address ON (customer_shipping_address.id = primary_demand_order.shipping_address_id)
+LEFT JOIN distribution_point ON (distribution_point.id = primary_demand_order.distribution_point_id)
+WHERE invoice.code = $P{invoiceNo};]]>
+	</queryString>
+	<field name="id" class="java.lang.Long"/>
+	<field name="invoice_no" class="java.lang.String"/>
+	<field name="invoiceDate" class="java.lang.String"/>
+	<field name="dpName" class="java.lang.String"/>
+	<field name="dpAddress" class="java.lang.String"/>
+	<field name="dpEmail" class="java.lang.String"/>
+	<field name="dpCode" class="java.lang.String"/>
+	<field name="customerAddress" class="java.lang.String"/>
+	<field name="actualDiscountValue" class="java.lang.Double"/>
+	<field name="actualOtherChargeValue" class="java.lang.Double"/>
+	<field name="actualVatValue" class="java.lang.Double"/>
+	<field name="discountName" class="java.lang.String"/>
+	<field name="otherChargeName" class="java.lang.String"/>
+	<field name="vatTaxName" class="java.lang.String"/>
+	<variable name="totalAmount" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[$V{totalAmount}]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<variable name="grandTotal" class="java.lang.Double">
+		<variableExpression><![CDATA[$V{totalAmount} + $F{actualOtherChargeValue} + $F{actualVatValue} - $F{actualDiscountValue}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="61" splitType="Stretch">
+			<staticText>
+				<reportElement x="62" y="41" width="436" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[BDFP Factory]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="62" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice No. ]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="62" y="0" width="100" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{invoice_no}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1" y="20" width="62" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Date. ]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="64" y="20" width="121" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{invoiceDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="81" splitType="Stretch">
+			<staticText>
+				<reportElement x="96" y="41" width="366" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Delivery Challan]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="96" y="21" width="366" height="18"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{dpEmail}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="96" y="63" width="366" height="18"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{customerAddress}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="96" y="2" width="366" height="18"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{dpAddress}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="44" splitType="Stretch">
+			<subreport>
+				<reportElement stretchType="RelativeToTallestObject" x="0" y="0" width="207" height="44"/>
+				<subreportParameter name="id">
+					<subreportParameterExpression><![CDATA[$F{id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<returnValue subreportVariable="totalAmount" toVariable="totalAmount"/>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "primary_delivery_chillan_details.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="23">
+			<subreport>
+				<reportElement stretchType="RelativeToTallestObject" x="0" y="0" width="207" height="23"/>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$F{id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "delivery_chillan_bonus_details.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="20">
+			<subreport>
+				<reportElement x="0" y="0" width="207" height="20"/>
+				<subreportParameter name="invoiceNo">
+					<subreportParameterExpression><![CDATA[$P{invoiceNo}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "bonus_product_secondery.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="30" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="62" height="15"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="10" isUnderline="false"/>
+				</textElement>
+				<text><![CDATA[Declaration]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="15" width="555" height="15"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="13" width="52" height="1"/>
+			</line>
+		</band>
+	</columnFooter>
+	<pageFooter>
+		<band height="109" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="150" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[Customer's Seal and Signature]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="423" y="0" width="132" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<text><![CDATA[for BDFP Factory]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="438" y="46" width="103" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[Authorised Signatory]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="66" width="555" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[This is a Computer Generated Invoice]]></text>
+			</staticText>
+			<subreport>
+				<reportElement x="1" y="86" width="554" height="23"/>
+				<subreportParameter name="print_date"/>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "footer.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</pageFooter>
+</jasperReport>

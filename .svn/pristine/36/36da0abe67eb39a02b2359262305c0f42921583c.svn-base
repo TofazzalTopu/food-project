@@ -1,0 +1,23 @@
+
+package ${packageName}
+
+class Authority {
+    String id
+	String authority
+    String role
+
+	static mapping = {
+        id generator: 'assigned'
+		cache true
+	}
+
+	static constraints = {
+		authority blank: false, unique: true
+        role blank: false, unique: true
+	}
+
+    def String toString() {
+        return role;
+    }
+
+}

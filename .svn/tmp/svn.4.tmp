@@ -1,0 +1,17 @@
+package com.bits.bdfp.setupbonus
+
+class SetupBonusPromotionController {
+
+    static allowedMethods = [create: "POST", update: "POST", delete: "POST"]
+
+    def show = {
+        render(view: "show", model: [])
+    }
+     def showEdit = {
+        render(view: "/setupBonusPromotion/edit/show", model: [])
+    }
+
+
+
+
+}

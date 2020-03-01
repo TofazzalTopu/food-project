@@ -1,0 +1,54 @@
+<%@ page import="com.bits.bdfp.geolocation.TerritoryConfiguration" %>
+<form name='gFormSetupBonusPromotion' id='gFormSetupBonusPromotion'>
+    <div class="element_row_content_container lightColorbg pad_bot0">
+        <table>
+            <tr><td><h4>Select Customer For This Incentive</h4></td></tr>
+            <tr class="element_row_content_container lightColorbg pad_bot0">
+                <td>
+                    <label class="txtright bold hight1x width1x" style="width: 165px;">
+                        Promotion Name
+                        <span class="mendatory_field">*</span>
+                    </label>
+                </td>
+                <td><g:textField name="promotionName" id="promotionName" value="" class="validate[required]"></td>
+
+                <td>
+                    <label class="txtright bold hight1x width1x" style="width: 165px;">
+                        As of Date
+                        <span class="mendatory_field">*</span>
+                    </label>
+                </td>
+                <td><g:textField name="asOfDate" id="asOfDate" value="" class="validate[required]"></td>
+            </tr>
+        </table>
+
+
+        <div class="buttons">
+            <span class="button"><input type="button" name="add-button" id="add-button"
+                                        class="ui-button ui-widget ui-state-default ui-corner-all"
+                                        value="Add"
+                                        onclick="addNewItemToCollectionGrid();"/></span>
+            %{--<span class="button"><input type='button' name="delete-button" id="remove-button"--}%
+            %{--class="ui-button ui-widget ui-state-default ui-corner-all" value='Delete'--}%
+            %{--onclick="deleteTerritorySubAreaConfiguration();"/></span>--}%
+        </div>
+
+        <table id="territory-detail-grid"></table>
+        <div id="territory-detail-grid-pager"></div>
+
+    </div>
+    <br/>
+
+    <div class="buttons" style="padding-top: 480px;">
+        <span class="button"><input type="button" name="create-button" id="create-button"
+                                    class="ui-button ui-widget ui-state-default ui-corner-all"
+                                    value="${message(code: 'default.button.create.label', default: 'Create')}"
+                                    onclick="executeAjaxTerritoryConfiguration();"/></span>
+        %{--<span class="button"><input type='button' name="delete-button" id="delete-button"--}%
+                                    %{--class="ui-button ui-widget ui-state-default ui-corner-all" value='Delete'--}%
+                                    %{--onclick="deleteAjaxTerritoryConfiguration();"/></span>--}%
+        <span class="button"><input type="button" name="cancel-button" id="cancel-button"
+                                    class="ui-button ui-widget ui-state-default ui-corner-all"
+                                    onclick="resetAll();" value="Cancel"/></span>
+    </div>
+</form>

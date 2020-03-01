@@ -1,0 +1,613 @@
+body {
+    /*font-family:"Lucida Grande", "Lucida Sans Unicode", Verdana, Arial, Helvetica, sans-serif;*/
+    font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
+    font-size: 11px;
+    /*font-size:12px;*/
+    margin: 0;
+    padding: 0;
+}
+
+a, img {
+    border: 0;
+}
+
+p, h1, form, button {
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.clear {
+    clear: both;
+}
+
+.spacer {
+    clear: both;
+    height: 1px;
+}
+
+div#header {
+    width: 800px;
+    margin: 0 auto;
+}
+
+div#main-container {
+    /*min-height: 600px;*/
+    /*background: #fff;*/
+    /*background: url("../images/layout/body_bg.png") no-repeat fixed right 85px !important;*/
+    /**background: url("../images/layout/body_bg.png") no-repeat fixed right top !important;*/
+    width: 100%;
+    min-height: 400px;
+    /**height: 400px;*/
+    float: left;
+    padding: 5px 0 0 0;
+}
+
+.littlelink {
+    font-weight: normal;
+    font-size: 8pt;
+}
+
+.littlelink a {
+    text-decoration: underline;
+}
+
+/* TABS */
+#tabs-container {
+    min-height: 29px;
+    _height: 29px;
+    border-top: 1px solid #ace;
+    width: 800px;
+    margin: 0 auto;
+}
+
+#tabs-container-bottom {
+    min-height: 29px;
+    _height: 29px;
+    border-bottom: 1px dotted #ace;
+    width: 800px;
+    margin: 0 auto;
+}
+
+.tabs-container-bottom-left {
+    border-right: 1px dotted #ace;
+    padding: 0px 20px 0px 0px;
+}
+
+#tabs {
+    margin: 0 0 0 254px;
+}
+
+.tab {
+    float: left;
+    list-style: none;
+    margin: 0 4px -1px 0;
+    border: 1px solid #ace;
+    background-color: #f4faff;
+}
+
+.tab a {
+    display: block;
+    padding: 7px 11px;
+    font-size: 13px;
+    min-height: 16px;
+    font-weight: bold;
+    position: relative;
+    border-top: 1px solid #fff;
+}
+
+.tab a:hover {
+    text-decoration: none;
+}
+
+.rounded_tl {
+    position: absolute;
+    margin: 0 !important;
+    top: -2px;
+    left: -1px;
+    background-color: transparent;
+}
+
+.rounded_tr {
+    position: absolute;
+    margin: 0 !important;
+    top: -2px;
+    right: -1px;
+    background-color: transparent;
+}
+
+.tab .tab-icon {
+    margin: 0 0 -4px 0;
+    padding-right: 5px;
+    background-color: #f4faff;
+}
+
+.tab.selected {
+    background-color: #fff;
+    border-bottom: 1px solid #fff;
+    _position: relative;
+}
+
+.tab.selected a {
+    color: #222;
+    background-color: #fff;
+}
+
+.tab.selected .tab-icon {
+    background-color: #fff;
+}
+
+.clearfix:after {
+    content: ".";
+    display: block;
+    clear: both;
+    visibility: hidden;
+    line-height: 0;
+    height: 0;
+}
+
+.clearfix {
+    display: inline-block;
+}
+
+html[xmlns] .clearfix {
+    display: block;
+}
+
+* html .clearfix {
+    height: 1%;
+}
+
+/* ----------- My Form ----------- */
+.myform {
+    margin: 40px auto;
+    width: 400px;
+    padding: 14px;
+}
+
+/* ----------- stylized ----------- */
+#stylized {
+    background: #FFFFFF;
+    margin: 70px auto 0;
+    display: table;
+    border: solid 1px #b7ddf2;
+}
+
+#stylized #loginForm {
+    float: left;
+    clear: both;
+    width: 100%;
+}
+
+#stylized h1 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    padding-bottom: 10px;
+    border-bottom: solid 1px #b7ddf2;
+}
+
+#stylized p {
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+#stylized label {
+    display: block;
+    font-weight: bold;
+    text-align: right;
+    /*width: 140px;*/
+    width: 120px;
+    padding: 6px 0px 0px 0px;
+    float: left;
+}
+
+#stylized .small {
+    color: #666666;
+    display: block;
+    font-size: 11px;
+    font-weight: normal;
+    text-align: right;
+    width: 140px;
+}
+
+#stylized input {
+    float: left;
+    font-size: 12px;
+    padding: 4px 2px;
+    border: solid 1px #aacfe4;
+    width: 200px;
+    margin: 2px 0 20px 10px;
+}
+#stylized .officeLabel {
+    text-align: left;
+    width: 100%;
+}
+#stylized input[type=radio], .radio {
+    width: 20px;
+    margin: 2px 5px 5px 10px;
+    border: none!important;
+}
+
+html*#stylized .radio {
+    width: 20px;
+    border: none;
+    margin: -2px 5px 5px 10px;
+}
+
+#stylized button {
+    clear: both;
+    /*margin-left:150px;*/
+    width: 125px;
+    height: 31px;
+    background: #348DD3;
+    text-align: center;
+    line-height: 31px;
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+#footer {
+    font-size: 11px;
+    text-align: center;
+    margin: 0px auto 25px auto;
+    padding: 3px 0 3px 3px;
+    color: #666666;
+    width: 800px;
+}
+
+#copyright {
+    font-size: 11px;
+    text-align: center;
+    padding: 3px 0 3px 23px;
+    color: #000000;
+
+    width: 800px;
+    margin: 0 auto;
+}
+
+/*Newly added on 28-spe-2011*/
+
+.header_container {
+    float: left;
+    clear: both;
+    padding: 0;
+    width: 100%; /*background:url(../images/header_bg.png) top center repeat-x;*/
+    min-width: 600px;
+
+}
+
+.header_top_bg {
+    float: left;
+    clear: both;
+    width: 100%;
+    background-color: #3674A0;
+}
+
+.header_container .left {
+    float: left;
+}
+
+.header_container h1 {
+    float: left;
+    padding-left: .5%;
+    padding-bottom: 5px;
+    padding-top: 5px;
+}
+
+.header_container h1 a {
+    float: left;
+    clear: both;
+}
+
+.header_container .right {
+    float: right;
+}
+
+.toggle_wrapper {
+    position: relative;
+    width: 287px;
+    z-index: 300;
+    float: right;
+    clear: right;
+    bottom: 29px;
+    right: 5px;
+}
+
+/*old css
+.toggle_wrapper {
+    position: relative;
+    width:100%;
+    z-index:300;
+}*/
+.header_container .right .acc_info_container {
+
+    width: 287px;
+    cursor: pointer;
+    position: absolute;
+    top: 35px;
+    left: 0;
+    z-index: 300;
+}
+
+.acc_info_container .acc_info_detail_top {
+    float: left;
+    clear: both;
+    width: 287px;
+    height: 7px;
+    background: url(../images/ac_info_detail_top.png) left bottom no-repeat;
+}
+
+.acc_info_container .acc_info_detail_middle {
+    float: left;
+    clear: both;
+    width: 267px;
+    background: url(../images/ac_info_detail_middle.png) left top repeat-y;
+    padding: 0px 5px 0 15px;
+    display: table;
+}
+
+.acc_info_container .acc_info_detail_middle .txt_container {
+    float: left;
+    width: 252px;
+}
+
+.acc_info_container .acc_info_detail_middle .txt_container p {
+    line-height: 20px;
+    padding-top: 3px;
+}
+
+.acc_info_container .acc_info_detail_middle a {
+    float: right;
+    width: 15px;
+    text-align: center;
+}
+
+.acc_info_container .acc_info_detail_bottom {
+    float: left;
+    clear: both;
+    width: 287px;
+    height: 7px;
+    background: url(../images/ac_info_detail_bottom.png) left top no-repeat;
+}
+
+.header_container .right .search_container {
+    float: right;
+    clear: right;
+    padding: 0px 8px 0px 0;
+}
+
+/*old css
+.header_container .right .search_container {
+    float: right;
+    clear: both;
+    padding: 40px 8px 3px 0;
+}
+*/
+
+.header_container .right .search_container .txt, .search_container .txt, .header_container .right .search_container input[type="text"] {
+    background: url(../images/search_input_bg.png) top left no-repeat;
+    float: left;
+    height: 20px;
+    width: 240px;
+    border: none;
+    padding: 1px 10px 3px;
+    font-size: 9pt;
+}
+
+.header_container .right .search_container .btn, .search_container .btn, .header_container .right .search_container input[type="button"]  {
+    background: url(../images/btn_search_bg.png) top left no-repeat;
+    float: left;
+    height: 26px;
+    border: none;
+    width: 23px;
+    text-indent: -999px;
+}
+html* .txt {
+    background: url(../images/search_input_bg.png) top left no-repeat;
+    float: left;
+    height: 20px;
+    width: 240px;
+    border: none;
+    padding: 1px 10px 3px;
+    font-size: 9pt;
+}
+html* .btn {
+    background: url(../images/btn_search_bg.png) top left no-repeat;
+    float: left;
+    height: 26px;
+    border: none;
+    width: 23px;
+    text-indent: -999px;
+}
+
+.header_container .welcome_container {
+    float: right;
+    padding-right: 5px;
+    padding-top: 3px;
+}
+
+/*old css
+.header_container .welcome_container {
+    float: left;
+    padding-left: 45px;
+    padding-top: 3px;
+}
+*/
+
+.header_container .welcome_container .text {
+    float: left;
+    margin: 4px 5px 0 0;
+    color: #fff;
+}
+
+.header_container .welcome_container ul {
+    margin: 0;
+    padding: 0;
+    float: left;
+}
+
+.header_container .welcome_container ul li {
+    list-style: none;
+    float: left;
+    width: 25px;
+}
+
+.header_container .welcome_container ul li a.btn_user {
+    background: url(../images/icon_user.png) top left no-repeat;
+    width: 26px;
+    height: 23px;
+    display: block;
+}
+
+.header_container .welcome_container ul li a.btn_color {
+    background: url(../images/btn_color_theme.png) top left no-repeat;
+    width: 26px;
+    height: 23px;
+    display: block;
+}
+
+.header_container .welcome_container ul li ul {
+    padding: 3px;
+}
+
+.header_container .welcome_container ul li li {
+    float: left;
+    clear: both;
+    width: 150px;
+    padding: 5px 2px;
+    border-bottom: 1px solid #DCDCDC;
+}
+
+.header_container .welcome_container ul li li.last {
+    border-bottom: none;
+}
+
+.header_container .welcome_container ul li li a {
+    display: block;
+    color: #4D4D4D;
+    text-decoration: none;
+}
+
+.header_container .welcome_container ul li li:hover {
+    background: #E3E0E0;
+}
+
+.header_container .welcome_container ul li li a:hover {
+    color: #000000;
+    text-decoration: none;
+}
+
+.header_container .welcome_container ul.login_container {
+    position: absolute;
+    top: 22px;
+    right: 35px;
+    background: #EEEEEE;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    z-index: 400;
+}
+
+.header_container .welcome_container ul.color_theme_container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #EEEEEE;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    z-index: 399;
+}
+
+.header_container .welcome_container .login_container {
+    /*
+    *display:block;
+    background:url(../images/login_bg_left.png) bottom left no-repeat;
+    height:34px;
+    position:absolute;
+    top:12px;
+    right:18px;
+    z-index:5;*/
+
+}
+
+.header_container .welcome_container .login_container .login {
+    float: left;
+    clear: both;
+    margin-right: -10px;
+    background: url(../images/login_bg_right.png) bottom right no-repeat;
+    padding: 13px 10px 5px;
+    color: #B7B7B7;
+
+}
+
+.header_container .welcome_container .login_container .login a {
+    font-size: 8pt;
+    font-weight: bold;
+    color: #000;
+    text-decoration: none;
+}
+
+.header_container .color_theme_btn {
+    float: right;
+    *width: 23px;
+    padding-right: 8px;
+    padding-top: 3px;
+}
+
+.header_container .color_theme_btn img.btn_color {
+    float: right;
+    clear: both;
+    width: 26px !important;
+}
+
+.header_container .color_theme_btn .color_theme_container {
+    position: absolute;
+    background: url(../images/color_theme_bg_left.png) top left no-repeat;
+    display: table;
+    top: 20px;
+    right: 20px;
+    z-index: 3;
+}
+
+.header_container .color_theme {
+    float: left;
+    clear: both;
+    background: url(../images/color_theme_bg_right.png) right top no-repeat;
+    margin-right: -10px;
+    padding: 3px 2px 3px 8px;
+    min-width: 210px;
+}
+
+.header_container .color_theme span {
+    float: left;
+}
+
+.header_container .color_theme ul {
+    float: right;
+    margin: 0;
+    padding: 0;
+}
+
+.header_container .color_theme ul li {
+    list-style: none;
+    float: left;
+    padding: 2px 3px;
+}
+
+.header_bottom_bg {
+    clear: both;
+    float: left;
+    width: 100%;
+    background-color: #ABD0EA;
+    /*border-top: 1px solid #A5C3D9;*/
+}
+.footerBottom {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width:100%;
+    border-top: 1px solid #AACCEE;
+
+}

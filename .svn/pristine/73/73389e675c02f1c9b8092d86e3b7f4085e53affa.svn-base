@@ -1,0 +1,35 @@
+
+/* THEME: flora: start */
+div.jGrowl div.flora {
+    background: 			#E6F7D4 url(flora-notification.png) no-repeat;
+    -moz-border-radius: 	10px;
+    -webkit-border-radius:	0px;
+    opacity: 				1;
+    filter: 				alpha(opacity = 100);
+    width: 					270px;
+    padding: 				0px;
+    overflow: 				hidden;
+    border-color: 			#5ab500;
+}
+
+div.jGrowl div.flora div.message {
+    padding: 				5px;
+    color: 					#000;
+}
+
+div.jGrowl div.flora div.header {
+    background              : url(flora-header.png) no-repeat;
+    padding                 : 5px;
+    font-size               : 16px;
+    font-weight             : bold;
+}
+
+div.jGrowl div.flora div.close {
+    background: 			url(images/cross.png) no-repeat;
+    padding: 				5px;
+    color: 					transparent;
+    padding: 				0px;
+    margin: 				5px;
+    width:					17px;
+}
+/* THEME: flora: end */

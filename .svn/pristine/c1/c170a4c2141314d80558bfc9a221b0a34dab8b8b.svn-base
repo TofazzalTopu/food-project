@@ -1,0 +1,95 @@
+<%@ page import="com.docu.accesscontrol.ModuleInfo ;org.codehaus.groovy.grails.commons.ApplicationHolder as AH" %>
+
+<%--
+  Created by IntelliJ IDEA.
+  User: bipul.kumar
+  Date: 5/10/11
+  Time: 1:14 PM
+  To change this template use File | Settings | File Templates.
+--%>
+
+<title><g:message code="Request Map" default="Request Map"/></title>
+<g:set var="pluginStyle" value="${AH.application.config.pluginStyle}" />
+<meta name="layout" content='${pluginStyle}'/>
+<script type="text/javascript">
+  function showRequestMapHead(moduleId){
+    if (moduleId == 'null') {
+      $("#request-map-html").html('');
+      return false
+    }
+
+    var AjaxLoader = {
+    showTo: function(divId) {
+        $('#' + divId).html('<div style="border:0px #4169e1 solid; text-align:center;"><img src="../images/pluginajax-loader.gif" /></div>');
+    },
+
+    hideFrom: function(divId) {
+        $('#' + divId).html('');
+    }
+}
+
+
+    $('#roleName').val($("#roleList option:selected").text())
+    AjaxLoader.showTo('request-map-html');
+    $.ajax({
+      url: "${request.contextPath}/${params.controller}/showRequestMapHead",
+      dataType: "html",
+      data: {moduleid:moduleId,rolename:$('#roleName').val()},
+
+      success: function(html) {
+        $("#request-map-html").html(html).show();
+
+      }
+    });
+  }
+
+   function saveRequestMap() {
+    $.ajax({
+      url: "${request.contextPath}/${params.controller}/saveRequestMap",
+      dataType: "json",
+      data: $("#request-map-form").serialize() ,
+      success: function(json) {
+         MessageRenderer.render(json.message)
+        showRequestMapHead(json.moduleid)
+      }
+    });
+  }
+
+</script>
+
+
+
+<h1><g:message code="Request Map" default="Request Map"/></h1>
+
+  <form id="request-map-form">
+    <div style="width:800px;">
+    <fieldset>
+      <legend>Request Map Info</legend>
+      <fieldset>
+        <div>
+          <div class="block-title">
+            <div class="element-title">Role</div>
+            <div class="element-title">Module</div>
+            <div class="clear"></div>
+          </div>
+          <div class="block-input">
+
+            <div class="element-input"><g:select name="roleList" id="roleList" from="${Authority.list()}" optionKey="id" optionValue="authority"  noSelection="['null':'-Select Role-']"/></div>
+            <div class="element-input"><g:select name="moduleList" id="moduleList" from="${ModuleInfo.list()}" optionKey="id"  noSelection="['null':'-Select Module-']" onChange="showRequestMapHead(this.value)"/></div>
+            <div class="element-input"><g:hiddenField name="roleName" id="roleName"/></div>
+            <div class="clear"></div>
+          </div>
+        </div>
+      </fieldset>
+      <br>
+        <div id="request-map-html"></div>
+    </fieldset>
+    <br/>
+    <div class="buttons">
+      <input type="button"
+              class="ui-button ui-widget ui-state-default ui-corner-all"
+              value="<g:message code="accountsLedgerMapping.saveButton.label" default="Save"/>"
+              onclick="saveRequestMap()"/>
+    </div>
+  </div>
+  </form>

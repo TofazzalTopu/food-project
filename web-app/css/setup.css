@@ -1,0 +1,576 @@
+/*
+ * ****************************************************************
+ * Copyright © 2010 Documentatm (TM) Limited. All rights reserved.
+ * DOCUMENTA PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+ * This software is the confidential and proprietary information of
+ * Documentatm (TM) Limited ("Confidential Information").
+ * You shall not disclose such Confidential Information and shall use
+ * it only in accordance with the terms of the license agreement
+ * you entered into with Documentatm (TM) Limited.
+ * *****************************************************************
+ */
+ 
+html * {
+    margin: 0;
+	color:#2E6E9E;
+	direction:ltr;
+	font-family:"lucida grande",tahoma,verdana,arial,sans-serif;
+    font-size:11px;
+	text-align:left;
+}
+
+/* GENERAL */
+a {
+	color:#3B5998;
+	cursor:pointer;
+	text-decoration:none;
+}
+
+.spinner {
+    padding: 5px;
+    position: absolute;
+    right: 0;
+}
+
+.sbi-layout-body-container{
+    width: 800px;
+}
+
+/** ATHENA: FORM */
+label {
+	float: left;
+	text-align: left;
+}
+
+form {
+    clear:both;
+}
+
+form div {
+    margin: .8em 0;
+}
+
+fieldset {
+	-moz-border-radius:5px 5px 5px 5px;
+	border:1px solid #BDC7D8;
+	margin:2px 0;
+	padding:15px;
+	background-color:#fff;
+}
+
+legend {
+	padding:3px 10px 3px 10px;
+	font:1em "lucida grande",tahoma,verdana,arial,sans-serif;
+	font-weight:bold;
+	-moz-border-radius:5px 5px 5px 5px;
+	border:1px solid #BDC7D8;
+	background-color:#f0f6ff;
+}
+
+.flexigrid div.fbutton .dexcel, .flexigrid div.fbutton .process-n-download {
+	background: url(../images/dexcel.png) no-repeat center left;
+}
+
+.flexigrid div.fbutton .delete {
+	background: url(../images/close.png) no-repeat center left;
+}
+
+.flexigrid div.fbutton .edit {
+	background: url(../images/edit.png) no-repeat center left;
+}
+
+.flexigrid div.fbutton .clear-results {
+	background: url(../images/clear-results.png) no-repeat center left;
+}
+
+.spinner {
+	clear:both;float:left;margin-bottom:30px;position:relative;
+}
+
+.flexigrid div.nBtn,
+.flexigrid div.nBtn div {
+	height:28px !important;
+}
+
+li.error {
+   color:#ff0000;
+   font:Arial, Helvetica, sans-serif; 
+}
+
+.error {
+   color:#ff0000;
+   font:Arial, Helvetica, sans-serif;
+}
+
+input[type=text].error, select.error, textarea.error{
+   border-color:#f9dd34;
+   background-color:#fff9d7;
+   color:#000000;
+}
+
+#errorList li{
+   color:#ff0000;
+}
+
+/* Larger Side Border */
+.required {
+   border: 1px solid #BDC7D8;
+   border-left: 4px solid #BDC7D8
+}
+
+.save, .clear-form, .search {
+	color:#2E6E9E;
+	text-align:center;
+	padding:3px 3px 3px 3px;
+	font:1em "lucida grande",tahoma,verdana,arial,sans-serif;
+	font-weight:bold;
+	-moz-border-radius:5px 5px 5px 5px;
+	border:1px solid #C5DBEC;
+	background:url("images/ui-bg_glass_85_dfeffc_1x400.png") repeat-x scroll 50% 50% #DFEFFC;
+}
+
+.save:hover, .clear-form:hover, .search:hover  {
+    background-color:#f1f8fd;
+    outline: none;
+}
+
+.save:active, .clear-form:active, .search:active {
+	padding:3px 3px 3px 3px;
+	font:1em "lucida grande",tahoma,verdana,arial,sans-serif;
+	font-weight:bold;
+	-moz-border-radius:5px 5px 5px 5px;
+	border:1px solid #2694e8;
+	outline: none;
+}
+
+.buttons {
+    border-bottom:1px solid #BDC7D8;
+    border-top:1px solid #BDC7D8;
+    clear:right;
+    color:#666666;
+    font:12px/1.5 Verdana;
+    padding:5px 8px;
+}
+
+.loginButton {
+    border-bottom:1px solid #BDC7D8;
+    border-top:1px solid #BDC7D8;
+    clear:right;
+    color:#666666;
+    font:12px/1.5 Verdana;
+    padding:5px 8px;
+    text-align:center
+}
+
+.deleteMsg {
+    background-color:#f0e68c;
+}
+
+/** ATHENA: FORM */
+/** STYLE TRANSFERRED FROM MAIN.GSP */
+/* remove padding and scrolling from elements that contain an Accordion OR a content-div */
+.ui-layout-center, /* has content-div */
+.ui-layout-west, /* has Accordion */
+.ui-layout-east, /* has content-div ... */
+.ui-layout-east .ui-layout-content {
+  /* content-div has Accordion */
+    padding: 0;
+    overflow: hidden;
+}
+
+.ui-layout-center P.ui-layout-content {
+    line-height: 1.4em;
+    margin: 0; /* remove top/bottom margins from <P> used as content-div */
+}
+
+h3, h4 {
+  /* Headers & Footer in Center & East panes */
+    font-size: 1.1em;
+    background:#FFF url("../img/tab0.gif");
+    border: 1px solid #BBB;
+    border-width: 0 0 1px;
+    padding: 9px;
+    margin: 0;
+}
+
+.ui-layout-east h4 {
+  /* Footer in East-pane */
+    font-size: 0.9em;
+    font-weight: normal;
+    border-width: 1px 0 0;
+}
+
+ul.menuDiv {
+	list-style: none;
+	margin: 0px;
+	padding: 0px;
+}
+
+li.menuDiv {
+	list-style: none;
+	margin: 0px;
+	padding: 0px;
+}
+
+/* unvisited link */
+ul.menuDiv li a:link {
+	font-size: 80%;
+	display: block;
+	padding: 3px 0px 3px 4px;
+	text-decoration: none;
+	color: #666666;
+	width:98%;
+}
+
+ul.menuDiv li a:visited {
+	font-size: 80%;
+	display: block;
+	padding: 3px 0px 3px 4px;
+	text-decoration: none;
+	color: #666666;
+	width:98%;
+}
+  
+ul.menuDiv li a:hover {
+    color: #000000;
+	background-color: #eeeeff;
+}
+
+/* Left Menu icon style*/
+i.pre-icon{
+	background-image:url("../images/menu_icon.png");
+	background-repeat:no-repeat;
+	display:inline-block;
+	height:18px;
+	width:18px;
+	left:15px;
+	position:absolute;
+}
+
+i.create-task, i.create_task {
+	background-position:0 0;
+}
+
+i.upload-task,  i.upload_task_view{
+	background-position:0 -18px;
+}
+
+i.task-grid-list, i.create_task_list {
+	background-position:0 -36px;
+}
+
+i.resolve-task{
+	background-position:0 -54px;
+}
+	
+i.task-trace-report, i.task_trace_report{
+	background-position:0 -378px;
+}
+	
+i.instrument-approve, i.approve_instruments{
+	background-position:0 -72px;
+}
+
+i.print-po, i.print_pay_order{
+	background-position:0 -90px;
+}
+
+i.print-tt, i.print_tele_transfer{
+	background-position:0 -504px;
+}
+
+i.print-dd, i.print_demand_draft{
+	background-position:0 -396px;
+}
+
+i.purchase-instrument, i.print_demand_draft{
+	background-position:0 -414px;
+}
+
+i.exchange-house-transcation, i.exchange_house_transaction_report{
+	background-position:0 -432px;
+}
+
+i.currency-transaction{
+	background-position:0 -450px;
+}
+
+i.country-transaction, i.country_transaction_report{
+	background-position:0 -468px;
+}
+
+i.arms_welcome{
+	background-position:0 -486px;
+}
+
+i.mobi-instrument, i.manage_mobile_payment{
+	background-position:0 -108px;
+}
+	
+i.import-mobi-instrument, i.upload_csv_from_operator{
+	background-position:0 -126px;
+}
+	
+i.account-posting, i.manage_account_posting{
+	background-position:0 -144px;
+}
+	
+i.currency-conversion, i.manage_currency_exchange{
+	background-position:0 -162px;
+}
+	
+i.bank, i.create_bank{
+	background-position:0 -180px;
+}
+	
+i.bank-branch, i.create_bank_branch{
+	background-position:0 -198px;
+}
+	
+i.exchange-house, i.create_exchange_house{
+	background-position:0 -216px;
+}
+	
+i.exchange-house-branch, i.create_exchange_house_branch{
+	background-position:0 -234px;
+}
+	
+i.currency, i.define_currency{
+	background-position:0 -252px;
+}
+	
+i.country, i.create_country {
+	background-position:0 -270px;
+}
+	
+i.district, i.create_district {
+	background-position:0 -288px;
+}
+	
+i.process-instrument-mapping{
+	background-position:0 -306px;
+}
+	
+i.bank-instrument-mapping, i.define_bank_branch_instrument_map{
+	background-position:0 -324px;
+}
+
+i.bank-account-no, i.create_bank_account{
+	background-position:0 -342px;
+}
+	
+i.exchange-house-account-no, i.create_exchange_house_account{
+	background-position:0 -360px;
+}
+	
+i.own-branch-account-no, i.create_own_bank_branch_account{
+	background-position:0 -522px;
+}
+	
+i.manage-users, i.manage_user{
+	background-position:0 -540px;
+}
+	
+i.assign-user-role, i.manage_user_role{
+	background-position:0 -558px;
+}
+		
+i.task-history, i.task_history{
+	background-position:0 -576px;
+}	
+	
+i.task-details, i.view_task_details{
+	background-position:0 -594px;
+}	
+	
+i.view-ticket, i.view_ticket{
+	background-position:0 -612px;
+}	
+		
+i.create-new-ticket, i.create_new_ticket{
+	background-position:0 -630px;
+}		
+	
+/* visited link */
+.menuText {
+	padding-left:32px;
+}
+
+ul.menuDiv {
+    list-style-image: url('img/images.jpg');
+}
+
+/** STYLE TRANSFERRED FROM MAIN.GSP */
+/** new css - Azam */
+a.refresh:link,
+a.refresh:visited,
+a.refresh:hover {
+	background:transparent url(flexigrid/images/load.png) no-repeat center left;
+	display:block;
+	height:16px;
+	width:16px;
+	cursor:pointer;
+}
+
+/** new css - Azam */
+/** new css - Aynul */
+table tr{ 
+   vertical-align: top; 
+}
+
+table td{ 
+   white-space:nowrap; 
+}
+
+.dateMask{ 
+   width:75px; 
+}
+
+.clearDiv{ 
+   height:2px; 
+   clear:both;
+}
+
+/** new css - Aynul */
+div.bannerBG {
+   background:#f0f5f9;
+   padding:0;
+   margin:0;
+}
+
+div.powered-by-athena {
+   float:right;
+   width:526px;
+   height:70px;
+   background:#3B5997 url(../images/header_poweredby_athena.jpg) no-repeat;
+}
+
+div.pGroup input[type=text], div.pGroup select {
+   border: 1px solid #000 !important;
+   border-left: 1px solid #000 !important;
+}
+
+input[type=text], select,textarea {
+   border: 1px solid #BDC7D8;
+   border-left: 4px solid #BDC7D8;
+}
+
+div.heading {
+   float:left;
+}
+
+div.welcomeText {
+   float:right;
+}
+
+div.pane_title {
+  /* Headers & Footer in Center & East panes */
+   font-size: 1.1em;
+   background:#FFF url("../img/tab0.gif");
+   border: 1px solid #BBB;
+   border-width: 0 0 1px;
+   padding: 9px;
+   margin: 0;
+   height:14px;
+}
+
+div.heading i.pre-icon-header{
+   background-image:url("../images/menu_icon.png");
+   background-repeat:no-repeat;
+   display:inline-block;
+   height:18px;
+   width:18px;
+   left:5px;
+   position:absolute;
+}
+
+span.headingText{
+   padding-left:18px
+}
+
+ul.csv-error-list li{
+   font-size: 80%;
+   display: block;
+   padding: 3px 0px 3px 4px;
+   text-decoration: none;
+   color: #666666;
+   width:98%;
+ }
+ 
+.welcomeText a:link {
+   -moz-border-radius: 7px 7px 7px 7px;
+   font-weight:bold;
+   padding:2px 7px 2px 7px;
+}
+
+.welcomeText a:visited {
+   -moz-border-radius: 7px 7px 7px 7px;
+   font-weight:bold;
+   padding:2px 7px 2px 7px;
+}
+
+.welcomeText a:hover{
+   -moz-border-radius: 5px 5px 5px 5px;
+   background:#5b74a8;
+   font-weight:bold;
+   padding:2px 7px 2px 7px;
+   color:#FFF;
+}
+
+label.error {
+   float: none;
+   color: #333;
+   padding-left: 20px;
+   vertical-align: top;
+   background: url("./ui-lightness/images/error.gif") no-repeat 3px 0px;
+}
+
+li.error {
+   float: none;
+   color: #333;
+   padding:2px 2px 2px 25px;
+   vertical-align: top;
+   background: url("./ui-lightness/images/error.gif") no-repeat 3px 0px;
+}
+
+ul.error_list{
+   color:#FF0000;
+   vertical-align:top;
+   list-style: none;
+}
+
+/** new css - Azam on June 29, 2010 */
+.appMessage{
+   background-color:#ffffda; color:#336d00;
+   font-weight: normal; font-size:11px;
+   border:1px solid #ccc;
+   padding:4px;
+   margin-bottom:5px;
+   display:none;
+}
+
+.appError{
+   background-color:#ffffda; color:#c44500;
+   font-weight: normal; font-size:11px;
+   border:1px solid #ccc;
+   padding:4px;
+   margin-bottom:5px;
+   display:none;
+}
+
+#left {
+   float: left;
+   width: 50%;
+   overflow-x:auto;
+}
+
+#right {
+   float: right;
+   width: 50%;
+   overflow-x:auto;   
+}
+
+.minwidth {
+    width: 100%;
+}
+

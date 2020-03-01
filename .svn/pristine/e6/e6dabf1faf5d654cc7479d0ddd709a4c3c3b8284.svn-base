@@ -1,0 +1,57 @@
+package com.bits.bdfp.finance
+
+import com.bits.bdfp.common.BankAccount
+import com.bits.bdfp.common.BankPaymentMethod
+import com.bits.bdfp.common.CashPool
+import com.bits.bdfp.customer.CustomerMaster
+import com.bits.bdfp.inventory.sales.DistributionPoint
+import com.docu.security.ApplicationUser
+
+class CustomerPayment {
+    CustomerMaster          customerMaster
+    DistributionPoint       distributionPoint
+    String                  transNo
+    String                  paymentMode
+    BankPaymentMethod       bankPaymentMethod
+    BankAccount             bankAccount
+    CashPool                cashPool
+    String                  refNo
+    String                  remark
+    Boolean                 isSecurityDeposit
+    Double                  amount
+    Double                  confirmAmount
+    Date                    dateTransaction
+    String                  mrNo
+    String                  invoices
+    String                  invoiceIssueDates
+    boolean                 isDeposited
+    ApplicationUser         userCreated
+    ApplicationUser         userUpdated
+    Date                    dateCreated
+    Date                    dateUpdated
+
+    static constraints = {
+        customerMaster(nullable: false)
+        distributionPoint(nullable: true)
+        transNo(nullable: false,blank: false,unique: true)
+        paymentMode(nullable: false)
+        bankPaymentMethod(nullable: true)
+        bankAccount(nullable: true)
+        cashPool(nullable: true)
+        refNo(nullable: true,blank: true)
+        remark(nullable: true)
+        isSecurityDeposit(nullable: true)
+        amount(nullable: false)
+        confirmAmount(nullable: false)
+        dateTransaction(nullable: false)
+        mrNo(nullable: false,blank: false,unique: true)
+        invoices(nullable: true,blank: true)
+        invoiceIssueDates(nullable: true,blank: true)
+        isDeposited(nullable: true,blank: true)
+
+        userCreated(nullable: false)
+        userUpdated(nullable: true)
+        dateCreated(nullable: false)
+        dateUpdated(nullable: true)
+    }
+}

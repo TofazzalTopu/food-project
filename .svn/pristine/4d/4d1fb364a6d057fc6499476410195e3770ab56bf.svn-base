@@ -1,0 +1,109 @@
+package com.bits.bdfp.inventory.product
+
+import com.bits.bdfp.accounts.ChartOfAccounts
+import com.bits.bdfp.settings.BusinessUnitConfiguration
+import com.bits.bdfp.settings.EnterpriseConfiguration
+import com.bits.bdfp.settings.MeasureUnitConfiguration
+import com.docu.security.ApplicationUser
+
+class FinishProduct {
+    EnterpriseConfiguration     enterpriseConfiguration
+    BusinessUnitConfiguration   businessUnitConfiguration
+    ProductCategory             productCategory
+    MasterProduct               masterProduct
+    MainProduct                 mainProduct
+    ProductType                 productType
+
+    ChartOfAccounts             chartOfAccountGroup
+    ChartOfAccounts             chartOfAccountHead
+    String                      outsideSalesCode
+    String                      insideSalesCode
+    String                      exportSalesCode
+    String                      institutionalSalesCode
+    String                      wastageSalesCode
+    String                      scrapSalesCode
+    String                      byProdSalesCode
+    String                      promotionalCrCode
+    String                      promotionalDrCode
+    String                      sampleCrCode
+    String                      sampleDrCode
+    String                      bonusCrCode
+    String                      bonusDrCode
+
+    String                      name
+    String                      description
+    Float                       packSize
+    Float                       qtyInLtr
+    String                      code
+    String                      oldCode
+
+    MeasureUnitConfiguration    measureUnitConfiguration
+
+    //Spesification
+    String                      length
+    String                      width
+    String                      color
+    String                      density
+    String                      texture
+    String                      other
+    Long                        sequenceNumber
+    Boolean                     isActive = Boolean.TRUE
+
+    ApplicationUser             userCreated
+    ApplicationUser             userUpdated
+    Date                        dateCreated
+    Date                        dateUpdated
+
+    static constraints = {
+        name(blank: false, nullable: false)
+        description(blank: true, nullable: true)
+        packSize(blank: false, nullable: false)
+        code(blank: false, nullable: false)
+        oldCode(blank: true, nullable: true)
+        enterpriseConfiguration(blank: false, nullable: false)
+        businessUnitConfiguration(blank: false, nullable: false)
+        productCategory(blank: false, nullable: false)
+        masterProduct(blank: false, nullable: false)
+        mainProduct(blank: false, nullable: false)
+        productType(blank: false, nullable: false)
+        measureUnitConfiguration(blank: false, nullable: false)
+        length(blank: true, nullable: true)
+        width(blank: true, nullable: true)
+        color(blank: true, nullable: true)
+        density(blank: true, nullable: true)
+        texture(blank: true, nullable: true)
+        other(blank: true, nullable: true)
+
+        chartOfAccountGroup(nullable: false)
+        chartOfAccountHead(nullable: false)
+        outsideSalesCode(blank: true, nullable: true)
+        insideSalesCode(blank: true, nullable: true)
+        exportSalesCode(blank: true, nullable: true)
+        institutionalSalesCode(blank: true, nullable: true)
+        wastageSalesCode(blank: true, nullable: true)
+        scrapSalesCode(blank: true, nullable: true)
+        byProdSalesCode(blank: true, nullable: true)
+        promotionalCrCode(blank: true, nullable: true)
+        promotionalDrCode(blank: true, nullable: true)
+        sampleCrCode(blank: true, nullable: true)
+        sampleDrCode(blank: true, nullable: true)
+        bonusCrCode(blank: true, nullable: true)
+        bonusDrCode(blank: true, nullable: true)
+        qtyInLtr(blank: false, nullable: false)
+        sequenceNumber(blank: true, nullable: true)
+        isActive(nullable: true)
+        userCreated(blank: false, nullable: false)
+        userUpdated(blank: true, nullable: true)
+        dateCreated(blank: false, nullable: false)
+        dateUpdated(blank: true, nullable: true)
+    }
+
+    static mapping = {
+        sequenceNumber defaultValue: "0"
+        isActive defaultValue: "1"
+    }
+    @Override
+    public String toString() {
+        return code + '-' + name
+    }
+}

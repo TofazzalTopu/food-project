@@ -1,0 +1,199 @@
+package com.bits.bdfp.inventory.demandorder.primarydemandorder
+
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrderService
+import com.docu.common.Action
+import com.docu.common.GridEntity
+import com.docu.commons.ObjectUtil
+import com.docu.security.ApplicationUser
+import org.apache.commons.logging.Log
+import org.apache.commons.logging.LogFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
+
+/**
+ * Created by prianka.adhikary on 9/21/2015.
+ */
+@Component("listPrintInvoiceAction")
+class ListPrintInvoiceAction extends Action{
+
+    private static final Log log = LogFactory.getLog(this)
+    @Autowired
+    PrimaryDemandOrderService primaryDemandOrderService
+
+    public Object preCondition(Object params, Object object) {
+        //not need to implement
+        return null
+    }
+
+    public Object execute(Object params, Object object) {
+        try{
+            init(params)
+            Map result = [:]
+            List objectList = null
+
+            result = primaryDemandOrderService.getListPrintInvoiceStatusGrid(this, params)
+            if (result) { // in case: normal list
+                objectList = result.objList
+                total = result.count
+            }
+            List objList = this.primaryInvoiceList(objectList, start)
+            result = this.postCondition(objList, null)
+            return result
+        }
+        catch (Exception ex) {
+            log.error(ex.message)
+            return  null
+        }
+    }
+
+    public Object primaryInvoiceListForRollback(Object params, Object object) {
+        try{
+            init(params)
+            Map result = [:]
+            List objectList = null
+
+            result = primaryDemandOrderService.primaryInvoiceListForRollback(params)
+            if (result) { // in case: normal list
+                objectList = result.objList
+                total = result.count
+            }
+            List objList = this.listForRollbackPrimaryInvoice(objectList, start)
+            result = this.postCondition(objList, null)
+            return result
+        }
+        catch (Exception ex) {
+            log.error(ex.message)
+            return  null
+        }
+    }
+
+
+    public Object secondaryInvoiceList(Object params, Object object){
+        try{
+            init(params)
+            Map result = [:]
+            List objectList = null
+
+            result = primaryDemandOrderService.getListPrintSecondaryInvoiceStatusGrid(this, params)
+            if (result) { // in case: normal list
+                objectList = result.objList
+                total = result.count
+            }
+            List objList = this.wrapListInGridEntityList(objectList, start)
+            return this.postCondition(objList, null)
+        }
+        catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    public Object cancelInvoiceList(Object params,Object object){
+        try{
+            init(params)
+            Map result = [:]
+            List objectList = null
+
+            result = primaryDemandOrderService.getListCancelInvoiceStatusGrid(this, params)
+            if (result) { // in case: normal list
+                objectList = result.objList
+                total = result.count
+            }
+            List objList = this.wrapListInGridEntityList(objectList, start)
+            return this.postCondition(objList, null)
+        }
+        catch (Exception ex){
+            log.error(ex.message)
+            return  null
+        }
+    }
+
+    private List wrapListInGridEntityList(objList, start) {
+        List instants = []
+        int counter = start + 1;
+        objList.each { instance ->
+            GridEntity obj = new GridEntity()
+            obj.id = instance.id
+            obj.cell = ["",
+                        "${counter}",
+                        "${instance.id ? instance.id : ''}",
+                        "${instance.order_no ? instance.order_no : ''}",
+                        "${instance.invoice_no? instance.invoice_no : ''}",
+                        "${instance.createdBy? instance.createdBy : ''}",
+//                        "${instance.legacy? instance.legacy : ''}",
+                        "${instance.customer? instance.customer : ''}",
+                        "${instance.address? instance.address : ''}",
+                        "${instance.invoiceAmount? instance.invoiceAmount : ''}",
+                        "${instance.date_created? instance.date_created : ''}",
+                        "${instance.demand_order_status? instance.demand_order_status : ''}"
+            ]
+            instants << obj
+            counter++
+        };
+        return instants
+    }
+
+    private List listForRollbackPrimaryInvoice(objList, start) {
+        List instants = []
+        int counter = start + 1;
+        objList.each { instance ->
+            GridEntity obj = new GridEntity()
+            obj.id = instance.id
+            obj.cell = ["",
+                        "${counter}",
+                        "${instance.id ? instance.id : ''}",
+                        "${instance.order_no ? instance.order_no : ''}",
+                        "${instance.invoice_no? instance.invoice_no : ''}",
+                        "${instance.createdBy? instance.createdBy : ''}",
+                        "${instance.customer? instance.customer : ''}",
+                        "${instance.invoiceAmount? instance.invoiceAmount : ''}",
+                        "${instance.date_created? instance.date_created : ''}",
+                        "${instance.demand_order_status? instance.demand_order_status : ''}"
+            ]
+            instants << obj
+            counter++
+        };
+        return instants
+    }
+
+    public Object postCondition(Object objList, Object object) {
+        int pageCount = 1
+        if (resultPerPage < 0) {
+            pageCount = 1
+            resultPerPage=total
+        }
+        else {
+            if (total > resultPerPage) {
+                pageCount = Math.ceil(total / resultPerPage)
+            }
+        }
+        Map output = [page: pageNum, total: pageCount, records: total, rows: objList]
+        return output;
+    }
+
+    private List primaryInvoiceList(objList, start) {
+        List instants = []
+        int counter = start + 1;
+        objList.each { instance ->
+            GridEntity obj = new GridEntity()
+            obj.id = instance.id
+            obj.cell = ["",
+                        "${counter}",
+                        "${instance.id ? instance.id : ''}",
+                        "${instance.order_no ? instance.order_no : ''}",
+                        "${instance.invoice_no? instance.invoice_no : ''}",
+                        "${instance.createdBy? instance.createdBy : ''}",
+                        "${instance.legacy? instance.legacy : ''}",
+                        "${instance.customer? instance.customer : ''}",
+                        "${instance.address? instance.address : ''}",
+                        "${instance.invoiceAmount? instance.invoiceAmount : ''}",
+                        "${instance.date_created? instance.date_created : ''}",
+                        "${instance.demand_order_status? instance.demand_order_status : ''}"
+            ]
+            instants << obj
+            counter++
+        };
+        return instants
+    }
+
+}

@@ -1,0 +1,704 @@
+package com.bits.bdfp.inventory.demandorder.processanorder
+
+import com.bits.bdfp.accounts.COAType
+import com.bits.bdfp.accounts.ChartOfAccountsMapping
+import com.bits.bdfp.accounts.Journal
+import com.bits.bdfp.accounts.JournalDetails
+import com.bits.bdfp.accounts.JournalDetailsService
+import com.bits.bdfp.accounts.JournalStatus
+import com.bits.bdfp.bonus.QuantityBasedBonus
+import com.bits.bdfp.customer.CustomerMaster
+import com.bits.bdfp.inventory.demandorder.DemandOrderStatus
+import com.bits.bdfp.inventory.demandorder.Invoice
+import com.bits.bdfp.inventory.demandorder.InvoiceDetails
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrder
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrderDetails
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrderService
+import com.bits.bdfp.inventory.demandorder.ProcessOrderService
+import com.bits.bdfp.inventory.product.ProductPriceService
+import com.bits.bdfp.inventory.sales.DistributionPoint
+import com.bits.bdfp.inventory.warehouse.FinishGoodStock
+import com.bits.bdfp.inventory.warehouse.FinishGoodStockTransaction
+import com.bits.bdfp.inventory.warehouse.SubWarehouse
+import com.bits.bdfp.inventory.warehouse.SubWarehouseType
+import com.bits.bdfp.inventory.warehouse.Warehouse
+import com.bits.bdfp.promotion.AdjustBonusPromotionWithInvoice
+import com.bits.bdfp.promotion.Promotion
+import com.bits.bdfp.promotion.PromotionPackage
+import com.bits.bdfp.promotion.PromotionPackageCustomers
+import com.bits.bdfp.promotion.PromotionPackageProducts
+import com.bits.bdfp.promotion.PromotionPackagePromotionalProducts
+import com.bits.bdfp.settings.EnterpriseConfiguration
+import com.bits.bdfp.util.ApplicationConstants
+import com.bits.common.CodeGenerationUtil
+import com.docu.common.Action
+import com.docu.common.Message
+import com.docu.commons.CommonConstants
+import com.docu.security.ApplicationUser
+import grails.plugins.springsecurity.SpringSecurityService
+import org.apache.commons.logging.Log
+import org.apache.commons.logging.LogFactory
+import org.hibernate.SessionFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
+
+import java.text.SimpleDateFormat
+
+/**
+ * Created by mdalinaser.khan on 2/15/16.
+ */
+@Component("processPrimaryOrderAction")
+class ProcessPrimaryOrderAction extends Action {
+    public static final Log log = LogFactory.getLog(this)
+    private final String MESSAGE_HEADER = 'Message'
+    @Autowired
+    PrimaryDemandOrderService primaryDemandOrderService
+    @Autowired
+    ProcessOrderService processOrderService
+    @Autowired
+    ProductPriceService productPriceService
+    @Autowired
+    SpringSecurityService springSecurityService
+    @Autowired
+    SessionFactory sessionFactory
+    @Autowired
+    JournalDetailsService journalDetailsService
+    Message message
+
+    public Object preCondition(Object params, Object object) {
+        return null
+    }
+
+    public Object execute(Object params, Object object) {
+        try {
+            String successResult = ""
+            String unSuccessResult = ""
+            Date dateNow = new Date()
+            Float totalInvoiceAmount = 0
+
+            SimpleDateFormat formatMonth = new SimpleDateFormat("MM")
+            String currentMonth = formatMonth.format(dateNow)
+            SimpleDateFormat formatYear = new SimpleDateFormat("YY")
+            String currentYear = formatYear.format(dateNow)
+            SimpleDateFormat formatDay = new SimpleDateFormat("DD")
+            String currentDay = formatDay.format(dateNow)
+            PrimaryDemandOrder primaryDemandOrder = null
+            ApplicationUser applicationUser = (ApplicationUser) springSecurityService.getCurrentUser()
+            String primaryOrderIds = params.orderIds
+            String[] primaryOrderIdList = primaryOrderIds.split(",")
+            if(params.calculateBonus == 'true'){
+                Message msg = checkBonus(primaryOrderIdList)
+                if(msg){
+                    return msg
+                }
+            }            
+
+            if (!params.warehouseId) {
+                return this.getMessage(MESSAGE_HEADER, Message.ERROR, "Factory Inventory is not Selected to Process Primary Order(s)")
+            }
+            Warehouse warehouse = Warehouse.get(Long.parseLong(params.warehouseId))
+            SubWarehouseType subWarehouseTypeSalable = SubWarehouseType.get(ApplicationConstants.SALABLE_TYPE_INVENTORY_ID)
+            SubWarehouse subWarehouse = SubWarehouse.findWhere(warehouse: warehouse, subWarehouseType: subWarehouseTypeSalable)
+            if (!subWarehouse) {
+                return this.getMessage(MESSAGE_HEADER, Message.ERROR, "Sub Inventory is not Available to Process Primary Order(s)")
+            }
+
+            List<QuantityBasedBonus> quantityBasedBonusList = new ArrayList<QuantityBasedBonus>()
+
+            for (int i = 0; i < primaryOrderIdList.length; i++) {
+                totalInvoiceAmount = 0
+                List<JournalDetails> journalDetailsList = new ArrayList<JournalDetails>()
+                List<JournalDetails> journalDetailsListForBonus = new ArrayList<JournalDetails>()
+                JournalDetails journalDetails = null
+                List<FinishGoodStockTransaction> finishGoodStockTransactionList = new ArrayList<FinishGoodStockTransaction>()
+                List<FinishGoodStock> finishGoodStockListToBeUpdated = new ArrayList<FinishGoodStock>()
+                primaryDemandOrder = PrimaryDemandOrder.get(Long.parseLong(primaryOrderIdList[i]))
+                if (primaryDemandOrder) {
+                    List primaryOrderDetailsList = processOrderService.primaryOrderDetailsList(primaryDemandOrder, warehouse.id, ApplicationConstants.SALABLE_TYPE_INVENTORY_ID)
+                    Boolean isDemandMeet = true
+                    if (primaryOrderDetailsList && primaryOrderDetailsList.size() > 0) {
+                        for (int j = 0; j < primaryOrderDetailsList.size(); j++) {
+                            if (primaryOrderDetailsList[j].order_qty > primaryOrderDetailsList[j].qty) {
+                                isDemandMeet = false
+                                break;
+                            }
+                        }
+                    } else {
+                        isDemandMeet = false
+                    }
+                    if (isDemandMeet) {
+                        // Prepare Retail Invoice
+                        DistributionPoint factoryDp = DistributionPoint.findByIsFactoryAndEnterpriseConfiguration(true, primaryDemandOrder.customerOrderFor.enterpriseConfiguration)
+                        // Assign Factory DP
+                        Invoice primaryInvoice = new Invoice(isIncentiveCalculated: false)
+                        primaryInvoice.primaryDemandOrder = primaryDemandOrder
+                        // Get Factory DP
+                        primaryInvoice.distributionPoint = factoryDp
+                        primaryInvoice.userCreated = applicationUser
+                        primaryInvoice.transactionDate = new Date()
+                        primaryInvoice.defaultCustomer = primaryDemandOrder.customerOrderFor
+                        primaryInvoice.vat = 0.0
+                        primaryInvoice.ait = 0.0
+                        primaryInvoice.discount = 0.00
+                        primaryInvoice.serviceCharge = 0.00
+                        primaryInvoice.paidAmount = 0.00
+                        primaryInvoice.isActive = true
+                        primaryInvoice.isDirectInvoice = false
+                        // Generate Retail Invoice No
+                        primaryInvoice.dateCreated = new Date()
+                        primaryInvoice.code = CodeGenerationUtil.instance.generateCode(primaryDemandOrder.customerOrderFor.enterpriseConfiguration, "PRIMARY_INVOICE", "", "", "", "", "", currentYear, currentMonth, "", "")
+
+                        /********************** COA Entry Start ************************/
+                        EnterpriseConfiguration enterpriseConfiguration = primaryDemandOrder.customerOrderFor.enterpriseConfiguration
+                        Journal journalHead = new Journal(enterprise: enterpriseConfiguration, userCreated: applicationUser, isActive: true)
+                        journalHead.tableName = sessionFactory.getClassMetadata(Invoice).tableName
+                        journalHead.transactionDate = new Date()
+                        journalHead.journalStatus = JournalStatus.CHECKED
+                        journalHead.transactionNo = primaryInvoice.code
+                        journalHead.journalNo = CodeGenerationUtil.instance.generateCode(enterpriseConfiguration, "JOURNAL", "", "", "", "", "", currentMonth, currentYear, "", currentDay)
+                        journalHead.moduleName = ApplicationConstants.MODULE_PROCESS_PRIMARY_ORDER
+                        if (!journalHead.validate()) {
+                            throw new RuntimeException(this.getValidationErrorMessage(journalHead).messageBody[0].toString())
+                        }
+                        /** ***********************************************************/
+
+                        List<PrimaryDemandOrderDetails> primaryDemandOrderDetailsList = PrimaryDemandOrderDetails.findAllByPrimaryDemandOrder(primaryDemandOrder)
+                        primaryDemandOrderDetailsList.each { primaryDemandOrderDetails ->
+                            float quantity = primaryDemandOrderDetails.quantity
+                            float tempQty = 0
+                            List<FinishGoodStock> finishGoodStockList = FinishGoodStock.withCriteria() {
+                                eq("subWarehouse", subWarehouse)
+                                eq("finishProduct", primaryDemandOrderDetails.finishProduct)
+                                gtProperty("inQuantity", "outQuantity")
+                                order("id", "asc")
+                            }
+                            // Get updated product price
+                            Map productPrice = productPriceService.getProductPriceByCustomerAndProduct(primaryDemandOrder.customerOrderFor.id, primaryDemandOrderDetails.finishProduct.id, primaryDemandOrder.territorySubArea.id)
+                            primaryDemandOrderDetails.rate = productPrice.productPriceWithVat
+                            totalInvoiceAmount += primaryDemandOrderDetails.quantity * primaryDemandOrderDetails.rate
+                            int totalItems = finishGoodStockList.size()
+                            boolean isBatchAllocated = false;
+
+                            /* Batch wise  allocation  */
+                            params.items.each { key, val ->
+                                if (val instanceof Map) {
+                                    long batchId = Long.parseLong(val.batchId)
+                                    long productId = Long.parseLong(val.productId)
+                                    Float batchQty = Float.parseFloat(val.batchQty)
+
+                                    for (int j = 0; j < totalItems; j++) {
+                                        if (productId == primaryDemandOrderDetails.finishProduct.id) {
+                                            if (finishGoodStockList[j].id == batchId) {
+                                                isBatchAllocated = true
+                                                finishGoodStockList[j].outQuantity += batchQty
+                                                finishGoodStockList[j].userUpdated = applicationUser
+                                                finishGoodStockListToBeUpdated.add(finishGoodStockList[j])
+
+                                                FinishGoodStockTransaction finishGoodStockTransaction = new FinishGoodStockTransaction()
+                                                finishGoodStockTransaction.unitPrice = primaryDemandOrderDetails.rate
+                                                finishGoodStockTransaction.finishGoodStock = finishGoodStockList[j]
+                                                finishGoodStockTransaction.userCreated = applicationUser
+                                                finishGoodStockTransaction.inQuantity = 0
+                                                finishGoodStockTransaction.outQuantity = batchQty
+                                                finishGoodStockTransaction.finishGoodWarehouseDetails = null
+                                                finishGoodStockTransaction.outInvoice = primaryInvoice
+                                                finishGoodStockTransaction.transactionDate = new Date()
+                                                finishGoodStockTransactionList.add(finishGoodStockTransaction)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            /*  End Batch wise  allocation */
+
+                            if (!isBatchAllocated) {
+                                for (int j = 0; j < totalItems; j++) {
+                                    if (quantity > 0) {
+                                        FinishGoodStockTransaction finishGoodStockTransaction = new FinishGoodStockTransaction()
+                                        finishGoodStockTransaction.unitPrice = primaryDemandOrderDetails.rate
+                                        finishGoodStockTransaction.finishGoodStock = finishGoodStockList[j]
+                                        finishGoodStockTransaction.userCreated = applicationUser
+                                        finishGoodStockTransaction.inQuantity = 0
+                                        finishGoodStockTransaction.finishGoodWarehouseDetails = null
+                                        finishGoodStockTransaction.outInvoice = primaryInvoice
+                                        finishGoodStockTransaction.transactionDate = new Date()
+                                        finishGoodStockList[j].userUpdated = applicationUser
+                                        tempQty = quantity
+                                        quantity = quantity - (finishGoodStockList[j].inQuantity - finishGoodStockList[j].outQuantity)
+                                        if (quantity > 0) {
+                                            finishGoodStockTransaction.outQuantity = finishGoodStockList[j].inQuantity - finishGoodStockList[j].outQuantity
+                                            finishGoodStockList[j].outQuantity = finishGoodStockList[j].inQuantity
+                                            finishGoodStockTransactionList.add(finishGoodStockTransaction)
+                                            finishGoodStockListToBeUpdated.add(finishGoodStockList[j])
+                                        } else {
+                                            finishGoodStockTransaction.outQuantity = tempQty
+                                            finishGoodStockList[j].outQuantity = finishGoodStockList[j].outQuantity + tempQty
+                                            finishGoodStockTransactionList.add(finishGoodStockTransaction)
+                                            finishGoodStockListToBeUpdated.add(finishGoodStockList[j])
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        InvoiceDetails invoiceDetails = null
+                        List<InvoiceDetails> invoiceDetailsList = new ArrayList<InvoiceDetails>()
+                        Float totalVat = 0.00
+                        finishGoodStockTransactionList.each { finishGoodStockTransaction ->
+                            if (!finishGoodStockTransaction.validate()) {
+                                throw new RuntimeException(this.getValidationErrorMessage(finishGoodStockTransaction).messageBody[0].toString())
+                            }
+                            // Prepare Invoice Details
+                            invoiceDetails = new InvoiceDetails(isIncentiveCalculated: false)
+                            invoiceDetails.batchNumber = finishGoodStockTransaction.finishGoodStock.batchNo
+                            invoiceDetails.finishProduct = finishGoodStockTransaction.finishGoodStock.finishProduct
+                            invoiceDetails.invoice = primaryInvoice
+                            invoiceDetails.quantity = finishGoodStockTransaction.outQuantity
+                            invoiceDetails.unitPrice = finishGoodStockTransaction.unitPrice
+                            Map productPrice = productPriceService.getProductPriceByCustomerAndProduct(primaryDemandOrder.customerOrderFor.id, invoiceDetails.finishProduct.id, primaryDemandOrder.territorySubArea.id)
+                            invoiceDetails.unitVat = productPrice.productPriceWithVat - productPrice.productPriceWithoutVat
+                            totalVat = invoiceDetails.unitVat * invoiceDetails.quantity
+                            invoiceDetails.dpUnitPrice = productPrice.dpPrice
+                            if (!invoiceDetails.validate()) {
+                                throw new RuntimeException(this.getValidationErrorMessage(invoiceDetails).messageBody[0].toString())
+                            }
+                            invoiceDetailsList.add(invoiceDetails)
+                        }
+
+                        primaryInvoice.invoiceAmount = totalInvoiceAmount
+                        primaryInvoice.vat = totalVat
+                        if (!primaryInvoice.validate()) {
+                            throw new RuntimeException(this.getValidationErrorMessage(primaryInvoice).messageBody[0].toString())
+                        }
+
+                        //BONUS********************************************************************************************************
+                        if(params.calculateBonus == 'true') {
+                            for (int j = 0; j < primaryDemandOrderDetailsList.size(); j++) {
+                                List bonusList = processOrderService.fetchBonusList(primaryDemandOrderDetailsList[j].finishProduct.id)
+                                if (bonusList && bonusList[0].required_quantity <= primaryDemandOrderDetailsList[j].quantity) {
+                                    List stockList = processOrderService.fetchStockList(primaryDemandOrderDetailsList[j].finishProduct.id)
+
+                                    Float bonusQty = 0
+                                    if (bonusList[0].is_multiplexing) {
+                                        Float temp = primaryDemandOrderDetailsList[j].quantity - (primaryDemandOrderDetailsList[j].quantity % bonusList[0].required_quantity)
+                                        bonusQty = temp / bonusList[0].required_quantity * bonusList[0].bonus_quantity
+                                    } else {
+                                        bonusQty = bonusList[0].bonus_quantity
+                                    }
+
+                                    yo:
+                                    for (int k = 0; k < stockList.size(); k++) {
+                                        QuantityBasedBonus quantityBasedBonus = new QuantityBasedBonus()
+                                        quantityBasedBonus.invoice = primaryInvoice
+                                        quantityBasedBonus.finishProduct = primaryDemandOrderDetailsList[j].finishProduct
+                                        quantityBasedBonus.userCreated = applicationUser
+                                        quantityBasedBonus.dateCreated = new Date()
+
+                                        FinishGoodStock finishGoodStockTemp = FinishGoodStock.read(stockList[k].fid)
+                                        if (stockList[k].quantity < bonusQty) {
+                                            quantityBasedBonus.quantity = stockList[k].quantity
+                                        } else {
+                                            quantityBasedBonus.quantity = bonusQty
+                                        }
+                                        finishGoodStockTemp.outQuantity = finishGoodStockTemp.outQuantity + quantityBasedBonus.quantity
+                                        quantityBasedBonus.batchNo = finishGoodStockTemp.batchNo
+                                        quantityBasedBonus.rate = stockList[k].rate
+
+                                        FinishGoodStockTransaction finishGoodStockTransactionTemp = new FinishGoodStockTransaction()
+                                        finishGoodStockTransactionTemp.unitPrice = 0
+                                        finishGoodStockTransactionTemp.finishGoodStock = finishGoodStockTemp
+                                        finishGoodStockTransactionTemp.inQuantity = 0
+                                        finishGoodStockTransactionTemp.outQuantity = quantityBasedBonus.quantity
+                                        finishGoodStockTransactionTemp.finishGoodWarehouseDetails = null
+                                        finishGoodStockTransactionTemp.outInvoice = primaryInvoice
+                                        finishGoodStockTransactionTemp.transactionDate = new Date()
+                                        finishGoodStockTransactionTemp.userCreated = applicationUser
+                                        finishGoodStockTransactionTemp.dateCreated = new Date()
+                                        quantityBasedBonus.finishGoodStockTransaction = finishGoodStockTransactionTemp
+
+                                        quantityBasedBonusList.add(quantityBasedBonus)
+                                        finishGoodStockListToBeUpdated.add(finishGoodStockTemp)
+                                        finishGoodStockTransactionList.add(finishGoodStockTransactionTemp)
+
+                                        bonusQty -= quantityBasedBonus.quantity
+                                        if (bonusQty <= 0) {
+                                            break yo
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        CustomerMaster customerMaster = primaryInvoice.defaultCustomer
+//                        Calculate Bonus & Promotions
+                        Map checkPromotion = checkPromotionBonus(primaryDemandOrder,primaryDemandOrderDetailsList)
+                        List<PromotionPackagePromotionalProducts> packagePromotionalProductsList = checkPromotion.packagePromotionalProductsList
+                        List<FinishGoodStock> finishGoodStockBonusPromotionList = []
+                        List<FinishGoodStockTransaction> finishGoodStockTransactionBonusPromotionList = []
+                        List<AdjustBonusPromotionWithInvoice> adjustBonusPromotionWithInvoiceList = []
+                        if((checkPromotion.message.type == Message.SUCCESS) && (packagePromotionalProductsList.size() > 0) && (checkPromotion.bonusCount > 0)){
+                            Message bonusMsg = null
+                            int bonusCount = checkPromotion.bonusCount
+
+                            SubWarehouse subWarehouseBonus = SubWarehouse.read(ApplicationConstants.BONUS_TYPE_INVENTORY_ID)
+                            double totalBonusProductPrice = 0
+
+                            for(int q = 0; q < packagePromotionalProductsList.size(); q++ ) {
+                                List<FinishGoodStock> finishGoodStockBonusPromotion = FinishGoodStock.findAllBySubWarehouseAndFinishProduct(subWarehouseBonus,packagePromotionalProductsList[q].product)
+                                if(finishGoodStockBonusPromotion.size() > 0){
+                                    String stockIds = ""
+                                    boolean isQuantityMeet = false
+                                    int totalBonusQuantity = (packagePromotionalProductsList[q].bonusQuantity * bonusCount)
+                                    for(int n = 0; n < finishGoodStockBonusPromotion.size(); n++){
+                                        if((totalBonusQuantity > 0) && (finishGoodStockBonusPromotion[n].inQuantity - finishGoodStockBonusPromotion[n].outQuantity) >= totalBonusQuantity){
+                                            finishGoodStockBonusPromotion[n].outQuantity += totalBonusQuantity
+                                            finishGoodStockBonusPromotion[n].userUpdated = applicationUser
+                                            finishGoodStockBonusPromotion[n].lastUpdated = new Date()
+
+                                            FinishGoodStockTransaction finishGoodStockTransactionBonusPromotion = new FinishGoodStockTransaction()
+                                            finishGoodStockTransactionBonusPromotion.unitPrice = 0
+                                            finishGoodStockTransactionBonusPromotion.finishGoodStock = finishGoodStockBonusPromotion[n]
+                                            finishGoodStockTransactionBonusPromotion.inQuantity = 0
+                                            finishGoodStockTransactionBonusPromotion.outQuantity = totalBonusQuantity
+                                            finishGoodStockTransactionBonusPromotion.finishGoodWarehouseDetails = null
+                                            finishGoodStockTransactionBonusPromotion.outInvoice = primaryInvoice
+                                            finishGoodStockTransactionBonusPromotion.transactionDate = new Date()
+                                            finishGoodStockTransactionBonusPromotion.userCreated = applicationUser
+                                            finishGoodStockTransactionBonusPromotion.dateCreated = new Date()
+
+                                            totalBonusQuantity = 0.00
+
+
+                                            if(stockIds){
+                                                stockIds += ","+finishGoodStockBonusPromotion[n].id
+                                            }else{
+                                                stockIds = finishGoodStockBonusPromotion[n].id
+                                            }
+
+                                            finishGoodStockTransactionBonusPromotionList.add(finishGoodStockTransactionBonusPromotion)
+                                            finishGoodStockBonusPromotionList.add(finishGoodStockBonusPromotion[n])
+                                        }else if((totalBonusQuantity > 0 && (finishGoodStockBonusPromotion[n].inQuantity - finishGoodStockBonusPromotion[n].outQuantity) > 0)){
+                                            totalBonusQuantity -= (finishGoodStockBonusPromotion[n].inQuantity - finishGoodStockBonusPromotion[n].outQuantity)
+                                            finishGoodStockBonusPromotion[n].outQuantity += (finishGoodStockBonusPromotion[n].inQuantity - finishGoodStockBonusPromotion[n].outQuantity)
+                                            finishGoodStockBonusPromotion[n].userUpdated = applicationUser
+                                            finishGoodStockBonusPromotion[n].lastUpdated = new Date()
+
+                                            FinishGoodStockTransaction finishGoodStockTransactionBonusPromotion = new FinishGoodStockTransaction()
+                                            finishGoodStockTransactionBonusPromotion.unitPrice = 0
+                                            finishGoodStockTransactionBonusPromotion.finishGoodStock = finishGoodStockBonusPromotion[n]
+                                            finishGoodStockTransactionBonusPromotion.inQuantity = 0
+                                            finishGoodStockTransactionBonusPromotion.outQuantity = (finishGoodStockBonusPromotion[n].inQuantity - finishGoodStockBonusPromotion[n].outQuantity)
+                                            finishGoodStockTransactionBonusPromotion.finishGoodWarehouseDetails = null
+                                            finishGoodStockTransactionBonusPromotion.outInvoice = primaryInvoice
+                                            finishGoodStockTransactionBonusPromotion.transactionDate = new Date()
+                                            finishGoodStockTransactionBonusPromotion.userCreated = applicationUser
+                                            finishGoodStockTransactionBonusPromotion.dateCreated = new Date()
+
+                                            if(stockIds){
+                                                stockIds += ","+finishGoodStockBonusPromotion[n].id
+                                            }else{
+                                                stockIds = finishGoodStockBonusPromotion[n].id
+                                            }
+
+                                            finishGoodStockTransactionBonusPromotionList.add(finishGoodStockTransactionBonusPromotion)
+                                            finishGoodStockBonusPromotionList.add(finishGoodStockBonusPromotion[n])
+                                        }
+
+                                        if(totalBonusQuantity == 0){
+                                            isQuantityMeet = true
+                                            break
+                                        }
+                                    }
+
+                                    if(isQuantityMeet == true){
+                                        AdjustBonusPromotionWithInvoice adjustBonusPromotionWithInvoice = new AdjustBonusPromotionWithInvoice()
+                                        adjustBonusPromotionWithInvoice.promotionPackage = packagePromotionalProductsList[q].promotionPackage
+                                        adjustBonusPromotionWithInvoice.customer = primaryInvoice.defaultCustomer
+                                        adjustBonusPromotionWithInvoice.invoice = primaryInvoice
+                                        adjustBonusPromotionWithInvoice.product = packagePromotionalProductsList[q].product
+                                        adjustBonusPromotionWithInvoice.stock = stockIds
+                                        adjustBonusPromotionWithInvoice.quantity = packagePromotionalProductsList[q].bonusQuantity * bonusCount
+                                        adjustBonusPromotionWithInvoice.rate = packagePromotionalProductsList[q].productRate
+                                        adjustBonusPromotionWithInvoice.isActive = true
+                                        adjustBonusPromotionWithInvoice.isAdjusted = true
+                                        adjustBonusPromotionWithInvoice.userCreated = applicationUser
+                                        adjustBonusPromotionWithInvoice.dateCreated = new Date()
+
+                                        adjustBonusPromotionWithInvoiceList.add(adjustBonusPromotionWithInvoice)
+
+                                        Map bonusProductPrice = productPriceService.getProductPriceByCustomerAndProduct(adjustBonusPromotionWithInvoice.customer.id, adjustBonusPromotionWithInvoice.product.id, primaryDemandOrder.territorySubArea.id)
+                                        totalBonusProductPrice += (bonusProductPrice.dpPrice * adjustBonusPromotionWithInvoice.quantity)
+
+                                        journalDetails = new JournalDetails(userCreated: applicationUser, journal: journalHead, isActive: true)
+                                        journalDetails.chartOfAccounts = adjustBonusPromotionWithInvoice.product.chartOfAccountHead
+                                        journalDetails.prefixCode = customerMaster.code
+                                        journalDetails.postfixCode = factoryDp.code  // Factory DP
+                                        journalDetails.debitAmount = 0.00
+                                        journalDetails.creditAmount = bonusProductPrice.dpPrice * adjustBonusPromotionWithInvoice.quantity
+                                        journalDetails.particular = ApplicationConstants.SALES + " of bonus product: [" +adjustBonusPromotionWithInvoice.product.code + "] " + adjustBonusPromotionWithInvoice.product.name
+                                        journalDetailsListForBonus.add(journalDetails)
+
+                                    }else{
+                                        bonusMsg = this.getMessage(MESSAGE_HEADER, Message.ERROR, "Bonus product quantity is not available in factory bonus sub-inventory.")
+                                        break
+                                    }
+                                }else{
+                                    bonusMsg = this.getMessage(MESSAGE_HEADER, Message.ERROR, "Bonus product not found in factory bonus sub-inventory.")
+                                    break
+                                }
+                            }
+
+                            if(bonusMsg){
+                                return bonusMsg
+                            }else{
+//                                Accounting Treatment Of Bonus Promotion
+                                ChartOfAccountsMapping chartOfAccountsMappingSalesDiscount = ChartOfAccountsMapping.findByCoaType(COAType.SALES_DISCOUNT)
+                                if (!chartOfAccountsMappingSalesDiscount) {
+                                    return this.getMessage(MESSAGE_HEADER, Message.ERROR, "Sales Discount head is not mapped with Chart of Accounts")
+                                }
+
+                                journalDetails = new JournalDetails(userCreated: applicationUser, journal: journalHead, isActive: true)
+                                journalDetails.chartOfAccounts = chartOfAccountsMappingSalesDiscount.chartOfAccounts
+                                journalDetails.prefixCode = customerMaster.code
+                                journalDetails.postfixCode = factoryDp.code  // Factory DP
+                                journalDetails.debitAmount = totalBonusProductPrice // * bonusCount
+                                journalDetails.creditAmount = 0.00
+                                journalDetails.particular = ApplicationConstants.SALES + " discount for the Customer: [" + customerMaster.code + "] " + customerMaster.name
+                                journalDetailsListForBonus.add(journalDetails)
+                            }
+                        }
+                        
+//                        ChartOfAccountsMapping chartOfAccountsMappingAdvance = ChartOfAccountsMapping.findByCoaType(COAType.ADVANCE_FROM_CUSTOMER)
+//                        if (!chartOfAccountsMappingAdvance) {
+//                            return this.getMessage(MESSAGE_HEADER, Message.ERROR, "Advance from Customer head is not mapped with Chart of Accounts")
+//                        }
+
+                        ChartOfAccountsMapping chartOfAccountsMappingReceivable = ChartOfAccountsMapping.findByCoaType(COAType.ACCOUNTS_RECEIVABLE)
+                        if (!chartOfAccountsMappingReceivable) {
+                            return this.getMessage(MESSAGE_HEADER, Message.ERROR, "Accounts Receivable head is not mapped with Chart of Accounts")
+                        }
+                        ChartOfAccountsMapping chartOfAccountsMappingVat = ChartOfAccountsMapping.findByCoaType(COAType.VAT_CURRENT_ACCOUNT)
+                        if (!chartOfAccountsMappingVat) {
+                            return this.getMessage(MESSAGE_HEADER, Message.ERROR, "VAT Current Account head is not mapped with Chart of Accounts")
+                        }
+
+                        /** From version 2.2.26 considering all transaction are done by full ceridit */
+                        journalDetails = new JournalDetails(userCreated: applicationUser, journal: journalHead, isActive: true)
+                        journalDetails.chartOfAccounts = chartOfAccountsMappingReceivable.chartOfAccounts
+                        journalDetails.prefixCode = customerMaster.code
+                        journalDetails.postfixCode = factoryDp.code  // Factory DP
+                        journalDetails.debitAmount = primaryInvoice.invoiceAmount
+                        journalDetails.creditAmount = 0.00
+                        journalDetails.particular = ApplicationConstants.SALES + " [Full Credit] for HO Book from Customer: [" + customerMaster.code + "] " + customerMaster.name
+                        journalDetailsList.add(journalDetails)
+
+
+                        BigDecimal vatTotal = 0.00
+                        invoiceDetailsList.each { invoiceDetailJournal->
+                            journalDetails = new JournalDetails(journal: journalHead, userCreated: applicationUser, isActive: true)
+                            journalDetails.chartOfAccounts = invoiceDetailJournal.finishProduct.chartOfAccountHead
+                            journalDetails.prefixCode = ""
+                            journalDetails.postfixCode = factoryDp.code
+                            journalDetails.debitAmount = 0.00
+                            journalDetails.creditAmount = (invoiceDetailJournal.unitPrice - invoiceDetailJournal.unitVat) * invoiceDetailJournal.quantity
+                            journalDetails.particular = ApplicationConstants.SALES + ": for HO Book of" + invoiceDetailJournal.finishProduct.name
+                            journalDetailsList.add(journalDetails)
+                            vatTotal += invoiceDetailJournal.unitVat * invoiceDetailJournal.quantity
+                        }
+
+                        if(vatTotal > 0.00){
+                            journalDetails = new JournalDetails(journal: journalHead, userCreated: applicationUser, isActive: true)
+                            journalDetails.chartOfAccounts = chartOfAccountsMappingVat.chartOfAccounts
+                            journalDetails.prefixCode = customerMaster.code
+                            journalDetails.postfixCode = factoryDp.code
+                            journalDetails.debitAmount = 0.00
+                            journalDetails.creditAmount = vatTotal
+                            journalDetails.particular = ApplicationConstants.VAT +  " for HO Book"
+                            journalDetailsList.add(journalDetails)
+                        }
+
+                        /*
+
+                        // Advance Are not considering from Version 2.2.26
+                        Float advanceAmount = 0.00
+                        Float balance = journalDetailsService.getCustomerBalance(chartOfAccountsMappingReceivable.chartOfAccounts, customerMaster.code)
+                        if (balance < 0.00) {
+                            advanceAmount = balance * (-1)
+                            if(primaryInvoice.invoiceAmount > advanceAmount){
+                                primaryInvoice.paidAmount = advanceAmount
+                            }else{
+                                primaryInvoice.paidAmount = primaryInvoice.invoiceAmount
+                            }
+                        }
+
+                        journalDetailsList = processOrderService.getJournalDetailsList(primaryInvoice.invoiceAmount, advanceAmount, journalHead, customerMaster, applicationUser,
+                                chartOfAccountsMappingReceivable.chartOfAccounts, chartOfAccountsMappingAdvance.chartOfAccounts, chartOfAccountsMappingVat.chartOfAccounts, invoiceDetailsList, factoryDp)
+
+                        */
+                        /************** COA for Bonus Item *****************************/
+                        if(params.calculateBonus == 'true') {
+                            ChartOfAccountsMapping chartOfAccountsMappingSalesDiscount = ChartOfAccountsMapping.findByCoaType(COAType.SALES_DISCOUNT)
+                            if (!chartOfAccountsMappingSalesDiscount) {
+                                return this.getMessage(MESSAGE_HEADER, Message.ERROR, "Sales Discount head is not mapped with Chart of Accounts")
+                            }
+                            float totalBonusValue = 0.00
+                            // CR.
+                            quantityBasedBonusList.each { quantityBasedBonus ->
+                                journalDetails = new JournalDetails(journal: journalHead, isActive: true, userCreated: applicationUser)
+                                journalDetails.chartOfAccounts = quantityBasedBonus.finishProduct.chartOfAccountHead
+                                journalDetails.prefixCode = ""
+                                journalDetails.postfixCode = factoryDp.code
+                                journalDetails.debitAmount = 0.00
+                                journalDetails.creditAmount = quantityBasedBonus.quantity * quantityBasedBonus.rate
+                                journalDetails.particular = "Bonus Item at HO Book for Customer: " + customerMaster.name + " [" + customerMaster.code + "] " + "; Batch:" + (quantityBasedBonus.batchNo ? quantityBasedBonus.batchNo : "")
+                                journalDetailsList.add(journalDetails)
+                                totalBonusValue += journalDetails.creditAmount
+                            }
+                            // DR.
+                            journalDetails = new JournalDetails(journal: journalHead, isActive: true, userCreated: applicationUser)
+                            journalDetails.chartOfAccounts = chartOfAccountsMappingSalesDiscount.chartOfAccounts
+                            journalDetails.prefixCode = customerMaster.code
+                            journalDetails.postfixCode = factoryDp.code
+                            journalDetails.debitAmount = totalBonusValue
+                            journalDetails.creditAmount = 0.00
+                            journalDetails.particular = "Total Sale Discount/Bonus at HO book for Customer: " + customerMaster.name + " [" + customerMaster.code + "]"
+                            journalDetailsList.add(journalDetails)
+                        }
+                        /****************************************************************/
+
+                        primaryDemandOrder.demandOrderStatus = DemandOrderStatus.ORDER_BOOKED
+                        primaryDemandOrder.lastUpdated = new Date()
+                        primaryDemandOrder.userUpdated = applicationUser
+
+                        Map mapInstance = [:]
+                        mapInstance.put("primaryInvoice", primaryInvoice)
+                        mapInstance.put("primaryInvoiceDetails", invoiceDetailsList)
+                        mapInstance.put("journalHead", journalHead)
+                        mapInstance.put("journalDetailsList", journalDetailsList)
+                        mapInstance.put("finishGoodStockList", finishGoodStockListToBeUpdated)
+                        mapInstance.put("finishGoodStockTransactionList", finishGoodStockTransactionList)
+                        mapInstance.put("primaryDemandOrder", primaryDemandOrder)
+
+                        mapInstance.put("finishGoodStockBonusPromotionList", finishGoodStockBonusPromotionList)
+                        mapInstance.put("finishGoodStockTransactionBonusPromotionList", finishGoodStockTransactionBonusPromotionList)
+                        mapInstance.put("adjustBonusPromotionWithInvoiceList", adjustBonusPromotionWithInvoiceList)
+                        mapInstance.put("journalDetailsListForBonus", journalDetailsListForBonus)
+
+                        if (quantityBasedBonusList) {
+                            mapInstance.put("quantityBasedBonusList", quantityBasedBonusList)
+                        }
+                        Invoice createdInvoice = (Invoice) processOrderService.processPrimaryDemandOrder(mapInstance)
+                        if (createdInvoice) {
+                            successResult += "Order: " + primaryDemandOrder.orderNo + " processed with Invoice No: " + createdInvoice.code + ";"
+                        } else {
+                            unSuccessResult += "Order: " + primaryDemandOrder.orderNo + " failed;"
+                        }
+                    } else {
+                        unSuccessResult += "Order: " + primaryDemandOrder.orderNo + " failed;"
+                    }
+                }
+            }
+            return this.getMessage(MESSAGE_HEADER, Message.SUCCESS, successResult + unSuccessResult)
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    public Object postCondition(Object params, Object object) {
+        return null
+    }
+
+    private Message checkBonus(String[] primaryDemandOrderList){
+        Map map = [:]
+        for(int i = 0; i < primaryDemandOrderList.length; i++) {
+            PrimaryDemandOrder primaryDemandOrder = PrimaryDemandOrder.get(Long.parseLong(primaryDemandOrderList[i]))
+            List<PrimaryDemandOrderDetails> primaryDemandOrderDetailsList = PrimaryDemandOrderDetails.findAllByPrimaryDemandOrder(primaryDemandOrder)
+            for (int j = 0; j < primaryDemandOrderDetailsList.size(); j++) {
+                List bonusList = processOrderService.fetchBonusList(primaryDemandOrderDetailsList[j].finishProduct.id)
+                if (bonusList && bonusList[0].required_quantity <= primaryDemandOrderDetailsList[j].quantity) {
+                    Float bonusQty
+                    if (bonusList[0].is_multiplexing) {
+                        Float temp = primaryDemandOrderDetailsList[j].quantity - (primaryDemandOrderDetailsList[j].quantity % bonusList[0].required_quantity)
+                        bonusQty = temp / bonusList[0].required_quantity * bonusList[0].bonus_quantity
+                    } else {
+                        bonusQty = bonusList[0].bonus_quantity
+                    }
+                    List stockList = processOrderService.fetchStockList(primaryDemandOrderDetailsList[j].finishProduct.id)
+                    Float stockQyt = 0
+                    for (int k = 0; k < stockList.size(); k++) {
+                        stockQyt += stockList[k].quantity
+                    }
+                    Float temp
+                    if(map.containsKey('' + primaryDemandOrderDetailsList[j].finishProduct.id)){
+                        temp = map.get('' + primaryDemandOrderDetailsList[j].finishProduct.id) + primaryDemandOrderDetailsList[j].quantity + bonusQty
+                        map.put('' + primaryDemandOrderDetailsList[j].finishProduct.id, temp)
+                    }else{
+                        temp = primaryDemandOrderDetailsList[j].quantity + bonusQty
+                        map.put('' + primaryDemandOrderDetailsList[j].finishProduct.id, temp)
+                    }
+                    if (temp > stockQyt) {
+                        return this.getMessage(MESSAGE_HEADER, Message.WARNING, "Not enough product in stock for Bonus. " +
+                                "Please uncheck 'Calculate Bonus' checkbox if you want to continue anyway")
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+//    Check Promotion or Bonus Amount or Quantity
+    private Map checkPromotionBonus(PrimaryDemandOrder primaryDemandOrder, List<PrimaryDemandOrderDetails> primaryDemandOrderDetailsList){
+        Map map = [:]
+        Object promotionPackageCustomers = processOrderService.checkBonusPromotions(primaryDemandOrder.customerOrderFor.id)
+        if(promotionPackageCustomers && (promotionPackageCustomers.calculationStatus == ApplicationConstants.BONUS_CALCULATION_STATUS_CURRENT)){
+            PromotionPackage promotionPackage = PromotionPackage.read(promotionPackageCustomers.packageId)
+            List<PromotionPackageProducts> packageProductsList = PromotionPackageProducts.findAllByPromotionPackageAndIsActive(promotionPackage,true)
+            List<PromotionPackagePromotionalProducts> packagePromotionalProductsList = PromotionPackagePromotionalProducts.findAllByPromotionPackageAndIsActive(promotionPackage,true)
+            int bonusCount = 0
+            int bonusLoopCount = 0
+            boolean isBonusConditionMeet = true
+
+            while(isBonusConditionMeet == true){
+                for(int i = 0; i < packageProductsList.size(); i++){
+                    bonusLoopCount = 0
+                    for (int j = 0; j < primaryDemandOrderDetailsList.size(); j++) {
+                        if (packageProductsList[i].product.id == primaryDemandOrderDetailsList[j].finishProduct.id) {
+                            int totalProductPurchaseQuantity = packageProductsList[i].purchaseQuantity * (bonusCount + 1)
+                            if((totalProductPurchaseQuantity <= primaryDemandOrderDetailsList[j].quantity) && (packageProductsList[i].quantityLimit >= totalProductPurchaseQuantity)){
+                                isBonusConditionMeet = true
+                            }else{
+                                isBonusConditionMeet = false
+                                map.put("message",this.getMessage(MESSAGE_HEADER, Message.WARNING, "Bonus condition doesn't meet by this invoice."))
+                            }
+                            break
+                        }else{
+                            bonusLoopCount++
+                        }
+                    }
+
+                    if(primaryDemandOrderDetailsList.size() == bonusLoopCount){
+                        isBonusConditionMeet = false
+                    }
+
+                    if(isBonusConditionMeet == false){
+                        break
+                    }
+                }
+
+                if(isBonusConditionMeet == true){
+                    bonusCount++
+                }
+            }
+
+            map.put("packagePromotionalProductsList",packagePromotionalProductsList)
+            map.put("bonusCount",bonusCount)
+            map.put("promotionPackage", promotionPackage)
+            map.put("message",this.getMessage(MESSAGE_HEADER, Message.SUCCESS, "Bonus promotion has been calculated."))
+        }else{
+            map.put("message",this.getMessage(MESSAGE_HEADER, Message.WARNING, "No bonus package found for this customer."))
+        }
+
+        return map;
+    }
+}

@@ -1,0 +1,536 @@
+<script type="text/javascript" language="Javascript">
+    var jqGridProductList = null;
+    var c= document.getElementsByClassName('headCheckBox');
+  var subAreaId = 1;
+  $(document).ready(function() {
+      var allElements = new Array();
+      var elementIndex = 0;
+      var lastSel = -1;
+      var qtyText = '';
+      $("#update-button").hide()
+
+      function checkForValue(elem) {
+          if (!elem) {
+              return [false, "Please enter marks."];
+          }
+          else {
+              return [true, ""];
+          }
+      }
+
+      var updateOrderEditor = {
+          onEnterKeyPressToGridCell: function () {
+              var callback = {
+                  type: 'keydown',
+                  fn: function (e) {
+                      debugger
+                      var key = e.charCode || e.keyCode;
+                      if (key == 9) {
+                          if (this.name == allElements[allElements.length - 1].name) {
+                              e.preventDefault();
+                              jQuery('#jqgrid-grid-finishProduct').restoreRow(lastSel);
+                              updateOrderEditor.editGridCell(lastSel)
+                          }
+                      }
+                      else if (key == 13) {
+                          jQuery('#jqgrid-grid-finishProduct').restoreRow(lastSel);
+                          updateOrderEditor.editGridCell(lastSel)
+                      }
+                  }
+              };
+              return callback;
+          },
+
+          editGridCell: function (rowid) {
+
+              var qty = qtyText.value;
+              if(qty && rowid){
+                  if(isNaN(qty)){
+                      var msg={"class":"com.docu.common.Message","messageBody":["Please enter number as quantity"],"messageTitle":"Message","type":0}
+                      MessageRenderer.render(msg);
+                  }
+                  else{
+                  }
+              }
+          }
+      };
+
+
+        $("#orderDateFrom, #orderDateTo,#deliveryDateFrom,#deliveryDateTo ").datepicker(
+          {
+              dateFormat: 'dd-mm-yy',
+              changeMonth: true,
+              changeYear: true
+          });
+
+
+        $('#ui-widget-header-text').html('SecondaryDemandOrder');
+        textboxes = $("input:visible:not([disabled],[readonly]),select,button");
+        if ($.browser.mozilla) {
+            $(textboxes).keypress (checkForEnter);
+        } else {
+            $(textboxes).keydown (checkForEnter);
+        }
+
+        $("#gFormPrimaryDemandOrder").validationEngine({   //    client side validation
+          isOverflown: true,
+          overflownDIV: ".ui-layout-center"
+        });
+        $("#gFormPrimaryDemandOrder").validationEngine('attach');
+        reset_form("#gFormPrimaryDemandOrder");
+
+    $("#jqgrid-grid").jqGrid({
+      url:"${resource(dir:'primaryDemandOrder', file:'getPrimaryDemandOrderDetails')}",
+      datatype: "json",
+      colNames:[
+        "<input type='checkbox' name='headCheckBox' class='headCheckBox' onclick='checkBox(event)'/> ",
+        'Sl',
+        'ID',
+        'Customer Name',
+        'Legacy ID',
+        'Ship To Address',
+        'Primary Order No',
+        'Order Date',
+        'Delivery Date',
+        'Demand Order Value',
+        'Receivable',
+        'Inventory',
+        'Details',
+        'Approval History'
+      ],
+      colModel:[
+        {name:'checkorder', index: 'checkorder', width: 30,edittype:'checkbox', editoptions:{ value:"True:False"}},
+        {name:'sl',index:'sl', width:30,align:'left'},
+        {name:'id',index:'id', width:0, hidden:true},
+        {name:'customer_name', index:'customer_name',width:80,align:'left'},
+        {name:'address', index:'address',width:50,align:'left'},
+        {name:'legacy_id', index:'legacy_id',width:50,align:'left'},
+        {name:'order_no', index:'order_no',width:50,align:'left'},
+        {name:'order_date', index:'order_date',width:50,align:'left'},
+        {name:'date_proposed_delivery', index:'date_proposed_delivery',width:50,align:'left'},
+        {name:'delivery_order_value', index:'delivery_order_value',width:50,align:'right', formatter:"number", formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}},
+        {name:'receivable', index:'receivable',width:50,align:'right', formatter:"number", formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}},
+        {name:'inventory', index:'inventory',width:50,align:'left', hidden:true},
+        {name: 'detail_column', index: 'detail_column', width: 50, align: 'left'},
+        {name:'history_column', index:'history_column',width:50,align:'left'}
+
+      ],
+        rowNum: 50,
+        rowList: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, -1],
+        pager: '#jqgrid-pager',
+        sortname: 'id',
+        viewrecords: true,
+        footerrow : true,
+        sortorder: "desc",
+        caption: "Primary Demand Order",
+        autowidth: true,
+        height: 350,
+        scrollOffset: 0,
+//        loadComplete: function () {
+//        },
+        loadComplete: function () {
+            var ids = $("#jqgrid-grid").jqGrid('getDataIDs');
+            for (key in ids) {
+                var rowData = $("#jqgrid-grid").getRowData(ids[key]);
+                var id= $("#jqgrid-grid").getCell(ids[key], 'id');
+                var name=$("#jqgrid-grid").getCell(ids[key], 'customer_name');
+                var orderNo=$("#jqgrid-grid").getCell(ids[key], 'order_no');
+
+                $("#jqgrid-grid").jqGrid('setRowData', ids[key], {checkorder: '<input type="checkbox"   class="is-confirm-checkbox" value="' + ids[key] + '" />'});
+                $("#jqgrid-grid").jqGrid('setRowData', ids[key], {detail_column: '<a  href="javascript:editPrimaryDemandOrder(' + '\'' + id + '\', \'' + name + '\', \'' + orderNo + '\')">' + 'Show Detail' + '</a>'});
+                $("#jqgrid-grid").jqGrid('setRowData', ids[key], {history_column: '<a  href="javascript:loadApprovalInfo(' + id + ')">' + 'Approval History' + '</a>'});
+            }
+
+
+            var $grid = $('#jqgrid-grid');
+            var colSum = $grid.jqGrid('getCol', 'delivery_order_value', false, 'sum');
+            $grid.jqGrid('footerData', 'set', { 'delivery_order_value': colSum , date_proposed_delivery:'Total Amount'});
+
+            var $footRow = $('#jqgrid-grid').closest(".ui-jqgrid-bdiv").next(".ui-jqgrid-sdiv").find(".footrow");
+
+        },
+        onSelectRow: function (rowid, status) {
+        }
+    });
+    $("#jqgrid-grid").jqGrid('navGrid', '#jqgrid-pager', {edit: false, add: false, del: false, search: false});
+
+    $(".ui-pg-selbox").children().each(function () {
+        if ($(this).val() == -1) {
+          $(this).html('All')
+        }
+    });
+    $(".ui-pg-selbox").children().each(function() {
+        if ($(this).val() == -1) {
+            $(this).html('All')
+        }
+    });
+
+      jqGridProductList = $("#jqgrid-grid-editProduct").jqGrid({
+          url:'',
+          datatype: "local",
+          colNames:[
+              'ID',
+              'Primary Demand Order Details ID',
+              'Product Name',
+              'Previous Qty',
+              'New Quantity',
+              'Rate',
+              'Amount'
+          ],
+          colModel:[
+              {name:'id', index:'id', width:20, hidden:true},
+              {name:'primaryDemandOrderDetailsId', index:'primaryDemandOrderDetailsId', hidden:true},
+              {name:'product', index:'product',width:150,align:'left'},
+              {name:'totalQuantity', index:'qty',width:50,align:'center'},
+              {name:'newQuantity', index:'newQuantity',width:50,align:'center', editable: true, edittype: 'text', resizable: true,
+                  editoptions: {dataInit: function (elem) {
+                      qtyText = elem;
+                      $(elem).focus(function () {
+                          this.select();
+                      });
+                      $(elem).keypress(function(e){
+                          if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+                              return false;
+                          }
+                      })
+                  }, dataEvents: [updateOrderEditor.onEnterKeyPressToGridCell()]} },
+              {name:'rate', index:'rate',width:50,align:'right'},
+              {name:'totalAmount', index:'amount',width:100,align:'right', formatter:"number", formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}}
+          ],
+          rowNum: -1,
+          sortname: 'id',
+          viewrecords: true,
+          sortorder: "desc",
+          caption: "Product Details For Edit",
+          autowidth: true,
+          footerrow: true,
+          cellEdit: true,
+          cellsubmit: 'clientArray',
+          cellurl: null,
+          height: 'auto',
+          scrollOffset: 0,
+          rownumbers: true,
+          loadComplete: function () {
+              var $grid = $('#jqgrid-grid-editProduct');
+              var colSum = $grid.jqGrid('getCol', 'totalAmount', false, 'sum');
+              $grid.jqGrid('footerData', 'set', { 'totalAmount': colSum , product:'Total'});
+          },
+          afterSaveCell : function(rowid,name,val,iRow,iCol) {
+              var rowData = $("#jqgrid-grid-editProduct").jqGrid('getRowData', rowid);
+              rowData.totalAmount = rowData.newQuantity * rowData.rate;
+              $('#jqgrid-grid-editProduct').jqGrid('setRowData', rowid, rowData);
+              calculateSummaryData();
+          },
+          onSelectRow: function (rowid, status) {
+          }
+      });
+  });
+
+    function calculateSummaryData() {
+        var $grid = $('#jqgrid-grid-editProduct');
+        var colSum = $grid.jqGrid('getCol', 'totalAmount', false, 'sum');
+        $grid.jqGrid('footerData', 'set', { 'totalAmount': colSum , product:'Total'});
+    }
+
+    function executeAjaxUpdatePrimaryDemandOrder() {
+        var primaryOrderId = $("#primaryOrderId").val();
+        $('#jqgrid-grid-editProduct').jqGrid("editCell", 0, 0, false);
+        var data =  $("#gFormPrimaryDemandOrder").serializeArray();
+        var gd = $("#jqgrid-grid-editProduct").jqGrid('getRowData');
+
+        if(primaryOrderId){
+            data.push({'name':'primaryOrderId', 'value': primaryOrderId});
+        }
+        var length = gd.length;
+
+        for (var i=0; i < length; ++i) {
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].finishProduct.id', 'value': gd[i].id});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].previousQty', 'value': gd[i].totalQuantity});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].id', 'value': gd[i].primaryDemandOrderDetailsId});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].quantity', 'value': gd[i].newQuantity});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].rate', 'value': gd[i].rate ? gd[i].rate : 1 });
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].primaryDemandOrder.id', 'value': primaryOrderId});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].amount', 'value': gd[i].totalAmount ?  gd[i].totalAmount : 1});
+        }
+        SubmissionLoader.showTo();
+        jQuery.ajax({
+            type: 'post',
+            data: data,
+            url : '${resource(dir:'primaryDemandOrder', file:'updatePrimaryDemandOrder')}',
+            success: function (data, textStatus) {
+                executePostConditionForUpdate(data);
+            },
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    $("#jqgrid-grid-editProduct").trigger("reloadGrid");
+                    reset_form("#gFormPrimaryDemandOrder");
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                }
+                else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete: function () {
+                SubmissionLoader.hideFrom();
+            },
+            dataType: 'json'
+        });
+        return false;
+    }
+
+    function executePostConditionForUpdate(result) {
+        if (result.type == 1) {
+            $("#jqgrid-editProduct").trigger("reloadGrid");
+        }
+        MessageRenderer.render(result);
+    }
+
+    function addFinishProductToGrid(){
+        var productId = $("#productId").val();
+        if(!productId){
+            MessageRenderer.renderErrorText("Product Item is not selected");
+            return
+        }
+
+        var quantity = Number($("#quantity").val());
+
+        var productName = $("#productName").val();
+        var unitPrice = Number($("#rate").val());
+        var totalAmount = unitPrice*quantity;
+        var rowTo = jqGridProductList.getRowData(productId.toString());
+        if (!rowTo.id) {
+            var newRowData = [
+                { 'id':productId.toString(), 'primaryDemandOrderDetailsId': '', 'product': productName, 'totalQuantity': 0,
+                     'newQuantity':quantity.toString(), 'rate': unitPrice,
+                    'totalAmount':totalAmount.toString()
+                }
+            ];
+            jqGridProductList.addRowData(productId.toString(), newRowData[0]);
+            clearProductItem();
+            customerStockIds = $("#jqgrid-grid-finishProduct").jqGrid('getDataIDs').toString();
+        } else{
+            MessageRenderer.renderErrorText("Stock already exist");
+        }
+    }
+
+    function clearProductItem(){
+        $("#productId").val('');
+        $("#productDropDownList").html('');
+        $("#productName").val('');
+        $("#rate").val('');
+        $("#quantity").val('');
+    }
+
+    function editPrimaryDemandOrder(id, name, orderNo){
+        $("#primaryOrderId").val(id);
+        $("#customerNameForProductSearch").val(name);
+        $("#orderNumberForProductSearch").val(orderNo);
+
+        $("#jqgrid-grid-editProduct").setGridParam({
+            url: '${resource(dir:'primaryDemandOrder', file:'editProductDetailsForSelectedPrimaryDemandOrder')}?orderId=' + id,
+            datatype: "json"
+        });
+        $("#jqgrid-grid-editProduct").trigger("reloadGrid");
+        fetchProductListForUpdatePrimaryDemandOrder();
+        clearProductItem();
+        $("#update-button").show()
+    }
+
+    function setPriceValue(){
+        if($('#productDropDownList').val()){
+            var priceValue=($('#productDropDownList').val().split('-'))
+            $('#productId').val(priceValue[0])
+            $('#rate').val(priceValue[1])
+            $('#productName').val($("#productDropDownList option:selected").text())
+        }
+    }
+
+    function loadApprovalInfo(id){
+        ApprovalInfo.popupApprovalListPanel(id)
+    }
+
+    function closeProductDetailsGrid(){
+        clearProductItem();
+        $("#update-button").hide();
+        $("#jqgrid-grid-editProduct").clearGridData();
+    }
+
+    var ApprovalInfo = {
+        orderInfoId: null,
+        popupApprovalListPanel: function(orderInfoId){
+            var url = '${resource(dir:'primaryDemandOrder', file:'popupApprovalListPanel')}' ;
+            var params = {primaryOrderId:orderInfoId};
+            DocuAjax.html(url, params, function(html){
+                $.fancybox(html);
+            });
+        }
+    };
+
+    function fetchProductListForUpdatePrimaryDemandOrder() {
+        var primaryOrderId = $("#primaryOrderId").val();
+        jQuery.ajax({
+            type: 'post',
+            url: "${resource(dir:'primaryDemandOrder', file:'fetchProductListForUpdatePrimaryDemandOrder')}?id="+primaryOrderId,
+            success: function (data) {
+                var options = '';
+                $.each(data, function (key, val) {
+                    options += '<option value="' + val.id + '">' + val.NAME + '</option>';
+                });
+                 $("#productDropDownList").html(options);
+            },
+            dataType: 'json'
+        });
+    }
+
+    function checkBox(e) {
+        e = e||event;/* get IE event ( not passed ) */
+        e.stopPropagation? e.stopPropagation() : e.cancelBubble = true;
+
+        var c= document.getElementsByClassName('headCheckBox');
+        var allSelect = document.getElementsByClassName('is-confirm-checkbox');
+
+//        alert(c[0].checked);
+     //   alert($('input:checkbox[name="is-confirm-checkbox"]'));
+        if (c[0].checked) {
+            $("input[type='checkbox']").each(function () {
+                $(this).attr('checked', 'checked')
+            });
+        } else {
+            $("input[type='checkbox']").each(function () {
+                $(this).removeAttr('checked')
+            });
+        }
+    }
+
+    function approvePrimaryDemandOrder(){
+        var allSelect = document.getElementsByClassName('is-confirm-checkbox');
+        var actionUrl = null;
+        var allIds =  {};
+        var i = 0;
+        $('.is-confirm-checkbox').each(function () {
+            if (this.checked) {
+                var selectedOrderList = $(this).val();
+                allIds['items.primaryDemandOrder[' + i + '].id'] = selectedOrderList;
+                i++
+            }
+        });
+
+//        return;
+        if( i == 0){
+            MessageRenderer.renderErrorText("No Primary Order Selected");
+            return;
+        }
+        SubmissionLoader.showTo();
+        $.ajax({
+            url: '${resource(dir:'primaryDemandOrder', file:'approveSelectedPrimaryDemandOrder')}?rejectionCause='
+            + $("#remarks").val(),
+            type: "POST",
+            data: allIds,
+            beforeSend: function (jqXHR, settings) {
+                $("#loader_icon").show();
+            },
+            success: function (entity) {
+                executePostConditionForApprove(entity);
+            }, error: function (XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    $("#jqgrid-grid").trigger("reloadGrid");
+                    $("#jqgrid-grid-product").clearGridData();
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                }
+                else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete: function (entity) {
+                $("#loader_icon").hide();
+                SubmissionLoader.hideFrom();
+            },
+            dataType: 'json'
+        });
+
+    }
+
+
+    function rejectPrimaryDemandOrder(){
+
+        var allSelect = document.getElementsByClassName('is-confirm-checkbox');
+        var actionUrl = null;
+        var allIds =  {};
+        var i = 0;
+        $('.is-confirm-checkbox').each(function () {
+            if (this.checked) {
+                var selectedOrderList = $(this).val();
+                allIds['items.primaryDemandOrder[' + i + '].id'] = selectedOrderList;
+                i++
+            }
+        });
+
+        if( i == 0){
+            MessageRenderer.renderErrorText("No Primary Order Selected");
+            return;
+        }
+        SubmissionLoader.showTo();
+        $.ajax({
+            url: '${resource(dir:'primaryDemandOrder', file:'rejectSelectedPrimaryDemandOrder')}?rejectionCause='
+            + $("#remarks").val(),
+            data: allIds,
+            type:"POST",
+            beforeSend:function(jqXHR, settings) {
+            },
+            success: function (data, textStatus) {
+                executePostConditionForConfirmReject(data);
+            },
+            error:function (XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    $("#jqgrid-grid").trigger("reloadGrid");
+                    $("#jqgrid-grid-product").clearGridData();
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                }else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete:function (data) {
+                $("#fancy-result-display-block").html("");
+                parent.$.fancybox.close();
+                SubmissionLoader.hideFrom();
+            },
+            dataType:'json'
+        });
+    }
+
+    function executePostConditionForConfirmReject(result) {
+        if (result.type == 1) {
+            $("#jqgrid-grid").trigger("reloadGrid");
+            $("#jqgrid-grid-product").clearGridData();
+        }
+        MessageRenderer.render(result);
+    }
+
+    function executePostConditionForApprove(result) {
+        if (result.type == 1) {
+            $("#jqgrid-grid").trigger("reloadGrid");
+            $("#jqgrid-grid-product").clearGridData();
+        }
+        MessageRenderer.render(result);
+    }
+
+  function getPrimaryDemandOrderDetails() {
+      $("#jqgrid-grid").setGridParam({
+          url: '${resource(dir:'primaryDemandOrder', file:'getPrimaryDemandOrderDetails')}?customerId='
+          + $("#customerId").val()+ '&orderNo=' + $("#orderNumber").val() + '&orderDateFrom='  + $("#orderDateFrom").val()
+          +'&orderDateTo='  + $("#orderDateTo").val() + '&deliveryDateFrom='  + $("#deliveryDateFrom").val()
+          + '&deliveryDateTo=' + $("#deliveryDateTo").val()+'&defaultCustomer='+ $("#defaultCustomer").val()
+          + '&legacyId=' + $("#legacyId").val()+ '&customerSalesChannel=' + $("#customerSalesChannel").val()
+      });
+      $("#jqgrid-grid").trigger("reloadGrid");
+  }
+
+  var CustomerInfo = {
+      customerCoreInfoId: null,
+      setCustomerInformation: function (customerCoreInfoId, customerCoreInfo) {
+          $("#defaultCustomer").val(customerCoreInfo);
+          $("#defaultCustomerId").val(customerCoreInfoId);
+          CustomerInfo.customerCoreInfoId = customerCoreInfoId;
+      }
+  }
+</script>

@@ -1,0 +1,101 @@
+
+dataSource {
+    pooled = true
+    driverClassName = "com.mysql.jdbc.Driver"
+    dialect = "org.hibernate.dialect.MySQL5InnoDBDialect"
+//    driverClassName = "org.postgresql.Driver"
+//    dialect = "com.docu.postgres.BitsPostgreSQLDialect"
+
+    properties {
+        initialSize = 5
+        maxActive = 10
+        minIdle = 5
+        maxIdle = 5
+        maxWait = 100000
+        validationQuery = "SELECT 1"
+        minEvictableIdleTimeMillis = 60000
+        timeBetweenEvictionRunsMillis = 60000
+    }
+
+}
+hibernate {
+    cache.use_second_level_cache = false
+    cache.use_query_cache = false
+    cache.provider_class = 'net.sf.ehcache.hibernate.EhCacheProvider'
+//    cache.region.factory_class = 'net.sf.ehcache.hibernate.EhCacheRegionFactory'
+}
+// environment specific settings
+environments {
+    development {
+        dataSource {
+            dbCreate = "update" // one of 'create', 'create-drop','update'
+            loggingSql = true
+//            url = "jdbc:mysql://localhost/bdfe"
+//            username = "bdfe"
+//            password = "bdfe"
+//            url = "jdbc:mysql://10.100.11.122/bdfe_dev"
+//            username = "bdfe_dev"
+//            password = "bdfe_dev321"
+//            url = "jdbc:mysql://10.100.11.122/bdfe_uat"
+//            username = "root"
+//            password = "root123"
+//              url = "jdbc:mysql://10.42.54.28/bdfe_26042018"
+//              username = "bdfeapp"
+//              password = "bdfe@pp"
+//            url = "jdbc:mysql://10.100.11.122/test"
+//            username = "root"
+//            password = "root123"
+//            url = "jdbc:mysql://10.42.53.12/bdfe0830dev"
+            url = "jdbc:mysql://10.42.53.12/bdfe_20181202"
+            username = "bdfeapp"
+            password = "bdfeapp12345"
+        }
+
+    }
+    test {
+        dataSource {
+            dbCreate = "update" // one of 'create', 'create-drop','update'
+            loggingSql = true
+//            url = "jdbc:mysql://localhost/bdfe"
+//            username = "bdfe"
+//            password = "bdfe"
+
+//            url = "jdbc:mysql://10.42.54.28/bdfe_26042018"
+//            username = "bdfeapp"
+//            password = "bdfe@pp"
+//            url = "jdbc:mysql://10.100.11.122/bdfe_dev"
+//            username = "bdfe_dev"
+//            password = "bdfe_dev321"
+//            url = "jdbc:mysql://10.100.11.122/bdfe_qa"
+//            username = "root"
+//            password = "root123"
+//            url = "jdbc:mysql://10.5.0.218/bdfe"
+//            username = "root"
+//            password = "root123"
+//            url = "jdbc:mysql://10.42.53.12/bdfe0830dev"
+            url = "jdbc:mysql://10.42.53.12/bdfe_20181202"
+            username = "bdfeapp"
+            password = "bdfeapp12345"
+        }
+    }
+    production {
+        dataSource {
+            dbCreate = "update" // one of 'create', 'create-drop','update'
+            loggingSql = false
+            url = ""
+            username = ""
+            password = ""
+
+            properties {
+                initialSize = 5
+                maxActive = 100
+                minIdle = 5
+                maxIdle = 5
+                maxWait = 100000
+                validationQuery = "SELECT 1"
+                minEvictableIdleTimeMillis = 60000
+                timeBetweenEvictionRunsMillis = 60000
+            }
+        }
+    }
+}

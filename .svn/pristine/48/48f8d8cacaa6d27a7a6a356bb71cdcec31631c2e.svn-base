@@ -1,0 +1,119 @@
+package com.bits.bdfp.inventory.demandorder.approveprimarydemandorder
+
+import com.bits.bdfp.history.PrimaryOrderHistory
+import com.bits.bdfp.inventory.demandorder.DemandOrderStatus
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrder
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrderApprovalStatus
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrderDetails
+import com.bits.bdfp.inventory.demandorder.PrimaryDemandOrderService
+import com.bits.bdfp.inventory.workflow.Workflow
+import com.bits.bdfp.inventory.workflow.WorkflowService
+import com.bits.bdfp.util.ApplicationConstants
+import com.docu.common.Action
+import com.docu.common.Message
+import com.docu.security.ApplicationUser
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
+
+/**
+ * Created by maimuna.akter on 9/15/2015.
+ */
+@Component("approvePrimaryDemandOrderAction")
+class ApprovePrimaryDemandOrderAction extends Action {
+
+    @Autowired
+    PrimaryDemandOrderService primaryDemandOrderService
+    @Autowired
+    WorkflowService workflowService
+    Message message;
+
+    public Object preCondition(Object params, Object object) {
+
+        Boolean isValid = false
+        ApplicationUser applicationUser = params.applicationUser
+        String msg = ''
+        List<PrimaryDemandOrderApprovalStatus> primaryDemandOrderApprovalStatusList = [];
+        List<PrimaryOrderHistory> primaryOrderHistoryList = []
+        String rejectionCause = params.rejectionCause;
+        try {
+            params.items.each { key, val ->
+                if (val instanceof Map) {
+                    PrimaryDemandOrderApprovalStatus primaryDemandOrderApprovalStatus = new PrimaryDemandOrderApprovalStatus()
+                    primaryDemandOrderApprovalStatus.demandOrderStatus = DemandOrderStatus.APPROVED;
+                    primaryDemandOrderApprovalStatus.remarks = rejectionCause
+                    primaryDemandOrderApprovalStatus.isApproved = true;
+                    primaryDemandOrderApprovalStatus.isReject = false
+                    primaryDemandOrderApprovalStatus.primaryDemandOrder = primaryDemandOrderService.read(Long.parseLong(val.id));
+                    primaryDemandOrderApprovalStatus.workflow = Workflow.findByMenuName(ApplicationConstants.PRIMARY_DEMAND_ORDER_APPROVAL_FORM)
+                    primaryDemandOrderApprovalStatus.userApproved = applicationUser
+                    primaryDemandOrderApprovalStatus.dateCreated = new Date();
+
+                    PrimaryDemandOrder primaryDemandOrder = PrimaryDemandOrder.findById(Long.parseLong(val.id));
+                    List<PrimaryDemandOrderDetails> demandOrderDetailsList = [];
+                    demandOrderDetailsList = PrimaryDemandOrderDetails.findAllByPrimaryDemandOrder(primaryDemandOrder);
+                    demandOrderDetailsList.each {
+                        PrimaryOrderHistory existPrimaryOrderHistory = PrimaryOrderHistory.findByPrimaryDemandOrderAndFinishProduct(primaryDemandOrder, it.finishProduct)
+                        if (existPrimaryOrderHistory) {
+                            existPrimaryOrderHistory.primaryDemandOrder = primaryDemandOrder
+                            existPrimaryOrderHistory.updatedBy = applicationUser
+                            primaryOrderHistoryList.add(existPrimaryOrderHistory)
+
+                        } else {
+                            PrimaryOrderHistory primaryOrderHistory = new PrimaryOrderHistory();
+                            primaryOrderHistory.primaryDemandOrder = primaryDemandOrder
+                            primaryOrderHistory.finishProduct = it.finishProduct
+                            primaryOrderHistory.newQuantity = it.quantity
+                            primaryOrderHistory.previousQuantity = it.quantity
+                            primaryOrderHistory.dateCreated = new Date()
+                            primaryOrderHistory.updatedBy = applicationUser
+                            primaryOrderHistoryList.add(primaryOrderHistory)
+                        }
+                    }
+                    if (primaryDemandOrderApprovalStatus.validate()) {
+                        primaryDemandOrderApprovalStatusList.add(primaryDemandOrderApprovalStatus)
+                        isValid = true
+                    } else {
+                        isValid = false;
+                        message = this.getValidationErrorMessage("Validation Failed");
+                    }
+
+                }
+            }
+            return [message: message, isValid: isValid, primaryDemandOrderApprovalStatusList: primaryDemandOrderApprovalStatusList, primaryOrderHistoryList: primaryOrderHistoryList]
+        } catch (Exception ex) {
+            log.error(ex.message)
+            return [message: ex.message, isValid: isValid, primaryDemandOrderApprovalStatusList: primaryDemandOrderApprovalStatusList, primaryOrderHistoryList: primaryOrderHistoryList]
+        }
+    }
+
+    public Object execute(Object params, Object object) {
+        try {
+            ApplicationUser applicationUser = (ApplicationUser) object
+            params.put("applicationUser", applicationUser)
+
+            Map primaryDemandOrderApprovalStatusMap = this.preCondition(params, null)
+            if (primaryDemandOrderApprovalStatusMap?.isValid) {
+                List primaryDemandOrderApprovalStatusList = primaryDemandOrderApprovalStatusMap.primaryDemandOrderApprovalStatusList;
+                List primaryOrderHistoryList = primaryDemandOrderApprovalStatusMap.primaryOrderHistoryList;
+
+                int noOfRows = primaryDemandOrderService.createORUpdatePrimaryOrderHistory(primaryOrderHistoryList)
+                int rowCount = primaryDemandOrderService.approvePrimaryDemandOrderStatus(primaryDemandOrderApprovalStatusList)
+                if (rowCount > 0) {
+                    message = this.getMessage("Primary Demand Order Approval", Message.SUCCESS, this.SUCCESS_SAVE)
+                } else {
+                    message = this.getMessage("Primary Demand Order Approval", Message.ERROR, this.FAIL_SAVE)
+                }
+            } else {
+                message = primaryDemandOrderApprovalStatusMap?.message
+            }
+
+        } catch (Exception ex) {
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    public Object postCondition(Object params, Object object) {
+        return null
+    }
+}

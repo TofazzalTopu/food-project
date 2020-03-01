@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report1" language="groovy" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<queryString>
+		<![CDATA[SELECT category.name AS category, csc.id, csc.name AS customer_sales_channel, division.name AS division,
+  dis.name AS region, tup.name AS zone, cm.name AS customer_name,
+map.id, map.name AS main_product, mp.name AS master_product,
+map.id, map.name AS main_product,
+  fp.name AS product, CONCAT(fp.pack_size,' ', muc.name) AS finish_product,muc.name AS ml_name, ROUND(sum(invd.quantity),2) AS quantity,
+  ROUND(sum((invd.quantity * invd.unit_price)),2) AS price, (CASE WHEN mp.id = 1 THEN IFNULL(ROUND((sum(invd.quantity) * fp.pack_size)/1000,2), 0) ELSE 0 END) AS avrg
+
+FROM invoice AS inv
+  INNER JOIN invoice_details AS invd ON inv.id = invd.invoice_id
+  INNER JOIN customer_master AS cm ON cm.id = inv.default_customer_id
+  INNER JOIN customer_category AS category ON category.id = cm.category_id
+  INNER JOIN finish_product AS fp ON fp.id = invd.finish_product_id
+  INNER JOIN master_product AS mp ON mp.id = fp.master_product_id
+  INNER JOIN main_product AS map ON map.id = fp.main_product_id
+  INNER JOIN measure_unit_configuration AS muc ON muc.id = fp.measure_unit_configuration_id
+  INNER JOIN customer_territory_sub_area AS ctsa ON cm.id = ctsa.customer_master_id
+  INNER JOIN territory_sub_area AS tsa ON tsa.id = ctsa.territory_sub_area_id
+  INNER JOIN thana_upazila_pouroshova AS tup ON (tup.id = tsa.thana_upazila_pouroshova_id)
+  INNER JOIN division AS division ON division.id = tsa.division_id
+  INNER JOIN district AS dis ON dis.id = tsa.district_id
+  INNER JOIN customer_sales_channel AS csc ON csc.id = cm.customer_sales_channel_id
+
+GROUP BY csc.id, division.id, dis.id, category.id, cm.id, fp.id
+ORDER BY csc.id, division.id, dis.id, category.id, cm.id, mp.name desc, map.name DESC, fp.pack_size DESC;]]>
+	</queryString>
+	<field name="category" class="java.lang.String"/>
+	<field name="id" class="java.lang.Long"/>
+	<field name="customer_sales_channel" class="java.lang.String"/>
+	<field name="division" class="java.lang.String"/>
+	<field name="region" class="java.lang.String"/>
+	<field name="zone" class="java.lang.String"/>
+	<field name="customer_name" class="java.lang.String"/>
+	<field name="main_product" class="java.lang.String"/>
+	<field name="master_product" class="java.lang.String"/>
+	<field name="product" class="java.lang.String"/>
+	<field name="finish_product" class="java.lang.String"/>
+	<field name="ml_name" class="java.lang.String"/>
+	<field name="quantity" class="java.lang.Double"/>
+	<field name="price" class="java.lang.Double"/>
+	<field name="avrg" class="java.lang.Double"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch"/>
+	</title>
+	<summary>
+		<band height="42" splitType="Stretch"/>
+	</summary>
+</jasperReport>

@@ -1,0 +1,255 @@
+/*
+ * ****************************************************************
+ * Copyright © 2010 Documentatm (TM) Limited. All rights reserved.
+ * DOCUMENTA PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+ * This software is the confidential and proprietary information of
+ * Documentatm (TM) Limited ("Confidential Information").
+ * You shall not disclose such Confidential Information and shall use
+ * it only in accordance with the terms of the license agreement
+ * you entered into with Documentatm (TM) Limited.
+ * *****************************************************************
+ */
+
+html * {
+    margin: 0;
+	color:#2E6E9E;
+	direction:ltr;
+	font-family:"lucida grande",tahoma,verdana,arial,sans-serif;
+    font-size:11px;
+	text-align:left;
+}
+
+a {
+	color:#3B5998;
+	cursor:pointer;
+	text-decoration:none;
+}
+
+.spinner {
+    padding: 5px;
+    position: absolute;
+    right: 0;
+}
+
+.ui-layout-north{
+    overflow-y:hidden !important;
+    overflow-x:hidden !important;
+}
+
+.sbi-layout-body-container{
+    width: 800px;
+}
+
+.message-box{
+    background-color: #FDFDE7;
+    border: 1px solid #FED980;
+    padding: 10px;
+}
+
+.message-box ul{
+    list-style: none;
+    padding: 0px;
+}
+
+.message-success-color{
+    color: #008E00;
+}
+
+.message-success-color li{
+    color: #008E00;
+}
+
+.message-error-color{
+    color: #ff0000;
+}
+
+.message-error-color li{
+    color: #ff0000;
+}
+
+.ui-jqgrid .ui-jqgrid-htable th div{
+    white-space:normal !important;
+    word-wrap:break-word !important;
+    height:auto !important;
+    padding:3px !important;    
+}
+
+.jqgrow td{
+    white-space:normal !important;
+    word-wrap:break-word !important;
+    height:auto !important;
+    padding:3px !important;    
+}
+
+.jqgrow td a{
+    text-decoration: underline;
+}
+
+.jqgrid-editable-column{
+    background-color:#FDFDE7;
+}
+
+
+
+
+
+.icon-save{
+    background-image:url(../images/icons/bullet_disk.png);
+    background-repeat:no-repeat;
+    background-position: 0, 5;
+    padding-left: 18px !important;
+
+}
+
+.icon-info{
+    background-image:url(../images/icons/bullet_error.png);
+    background-repeat:no-repeat;
+    background-repeat:no-repeat;
+    background-position: 0, 5;
+    padding-left: 18px !important;
+}
+
+.icon-edit{
+    background-image:url(../images/icons/pencil.png);
+    background-repeat:no-repeat;
+    background-position: 0, 5;
+    padding-left: 18px !important;
+
+}
+
+.icon-tick{
+    background-image:url(../images/icons/tick.png);
+    background-repeat:no-repeat;
+    background-position: 0, 5;
+    padding-left: 18px !important;
+
+}
+
+.icon-tick-gray{
+    background-image:url(../images/icons/tick_gray.png);
+    background-repeat:no-repeat;
+    background-position: 0, 5;
+    padding-left: 18px !important;
+
+}
+
+.icon-add{
+    background-image:url(../images/icons/add.png);
+    background-repeat:no-repeat;
+    background-position: 0, 5;
+    padding-left: 18px !important;
+
+}
+
+.icon-delete{
+    background-image:url(../images/icons/delete.png);
+    background-repeat:no-repeat;
+    background-position: 0, 5;
+    padding-left: 18px !important;
+
+}
+
+h1 {
+   margin: 0px 0px 8px 5px;
+   color:#2E6E9E;
+   direction:ltr;
+   font-family:"lucida grande",tahoma,verdana,arial,sans-serif;
+   font-size:16px;
+   text-align:left;
+}
+
+.clear{
+    clear:both;
+}
+
+.tab-content{
+    min-height: 350px;
+}
+
+.tab-content-block{
+    float:left;
+    list-style:none;
+    padding:0px 15px 0px 0px;
+    border:0px solid red;
+}
+
+.tab-content-block li{
+    padding-top:15px;
+}
+
+.tab-content-block input, select, textarea{
+    width: 100%
+}
+
+.last-block{
+    padding:0px !important;
+}
+
+.element-star{
+    color:red;
+}
+
+.element-title{
+    float:left;
+    width:150px;
+}
+
+.element-input, textbox{
+    float:left;
+    min-width:150px;
+}
+
+fieldset.photo{
+    border:1px solid #cccddd;
+    height: 150px;
+    width: 150px;
+    text-align: center;
+}
+
+fieldset {
+	-moz-border-radius:7px 7px 7px 7px;
+	border:1px solid #BDC7D8;
+	margin:8px 0px;
+	padding:15px;
+	background-color:#fff;
+}
+
+legend{
+	color:#2E6E9E;
+	font:1em "lucida grande",tahoma,verdana,arial,sans-serif;
+	font-weight:bold;
+}
+
+.simple-table-css{
+    border-collapse:collapse;
+    border:0px solid #2E6E9E;
+    border-right:1px solid #2E6E9E;
+    border-top:1px solid #2E6E9E;
+}
+
+.simple-table-css td{
+    border-bottom:1px solid #2E6E9E;
+    border-left:1px solid #2E6E9E;
+    padding: 5px;
+    color: #2E6E9E;
+    font-size: 11px;
+}
+
+.simple-table-css tr:first-child td{
+    font-weight: bold;
+    background-color: #DFEFFC;
+}
+
+.simple-table-css .button-delete{
+    background-image:url(../images/icons/cross.png);
+    background-repeat:no-repeat;
+    background-position: center center;
+    width: 10px;
+    height: 7px;
+    cursor: pointer;
+}
+
+.buttons {
+    clear:right;
+    padding:8px 5px;
+}

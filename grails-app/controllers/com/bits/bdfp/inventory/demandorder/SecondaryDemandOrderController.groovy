@@ -1,0 +1,226 @@
+package com.bits.bdfp.inventory.demandorder
+
+import com.bits.bdfp.customer.CustomerMaster
+import com.bits.bdfp.customer.customermaster.ListCustomerByEnterpriseAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.CreateSecondaryDemandOrderAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.DeleteSecondaryDemandOrderAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.ListForUpdateDemandOrderAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.ListProductByOrderAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.ListSecondaryDemandOrderAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.LoadOrderNoAutoCompleteAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.LoadOrderNoAutoCompleteForUpdateAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.UpdateSecondaryDemandOrderAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.ReadSecondaryDemandOrderAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.SearchSecondaryDemandOrderAction
+import com.bits.bdfp.inventory.product.finishproduct.ListProductByEnterpriseAction
+import com.bits.bdfp.inventory.product.finishproduct.ListProductByOrderForUpdateAction
+import com.bits.bdfp.inventory.product.finishproduct.ListProductPriceByCustomerAction
+import com.bits.bdfp.inventory.sales.distributionpoint.DistributionPointDefaultCustomerAction
+import com.bits.bdfp.inventory.sales.distributionpoint.ListDistributionPointByApplicationUser
+import com.bits.bdfp.inventory.sales.invoice.PrintSecondaryInvoiceAutoCompleteAction
+import com.bits.bdfp.settings.enterpriseconfiguration.EnterpriseAutocompleteListAction
+import com.bits.bdfp.customer.customermaster.ListDeliveryManByAppicationUserGeoLocationAction
+import com.bits.bdfp.util.ApplicationConstants
+import com.docu.common.Message
+import com.docu.security.ApplicationUser
+import com.docu.security.UserType
+import grails.plugins.springsecurity.SpringSecurityService
+import org.springframework.beans.factory.annotation.Autowired
+import grails.converters.JSON
+
+class SecondaryDemandOrderController {
+
+    @Autowired
+    private CreateSecondaryDemandOrderAction createSecondaryDemandOrderAction
+    @Autowired
+    private UpdateSecondaryDemandOrderAction updateSecondaryDemandOrderAction
+    @Autowired
+    private ListSecondaryDemandOrderAction listSecondaryDemandOrderAction
+    @Autowired
+    private DeleteSecondaryDemandOrderAction deleteSecondaryDemandOrderAction
+    @Autowired
+    private ReadSecondaryDemandOrderAction readSecondaryDemandOrderAction
+    @Autowired
+    private SearchSecondaryDemandOrderAction searchSecondaryDemandOrderAction
+    @Autowired
+    EnterpriseAutocompleteListAction enterpriseAutocompleteListAction
+    @Autowired
+    ListCustomerByEnterpriseAction  listCustomerByEnterpriseAction
+    @Autowired
+    ListProductByEnterpriseAction    listProductByEnterpriseAction
+    @Autowired
+    ListForUpdateDemandOrderAction  listForUpdateDemandOrderAction
+    @Autowired
+    LoadOrderNoAutoCompleteAction loadOrderNoAutoCompleteAction
+    @Autowired
+    LoadOrderNoAutoCompleteForUpdateAction loadOrderNoAutoCompleteForUpdateAction
+    @Autowired
+    ListProductByOrderAction listProductByOrderAction
+    @Autowired
+    ListProductByOrderForUpdateAction listProductByOrderForUpdateAction
+    @Autowired
+    DistributionPointDefaultCustomerAction distributionPointDefaultCustomerAction
+    @Autowired
+    ListDeliveryManByAppicationUserGeoLocationAction listDeliveryManByAppicationUserGeoLocationAction
+    @Autowired
+    ListProductPriceByCustomerAction listProductPriceByCustomerAction
+    @Autowired
+    ListDistributionPointByApplicationUser listDistributionPointByApplicationUser
+    @Autowired
+    PrintSecondaryInvoiceAutoCompleteAction printSecondaryInvoiceAutoCompleteAction
+
+    SpringSecurityService  springSecurityService
+
+    static allowedMethods = [create: "POST", update: "POST", delete: "POST"]
+
+    def list = {
+        ApplicationUser applicationUser = session?.applicationUser
+        render listSecondaryDemandOrderAction.execute(params, applicationUser) as JSON
+    }
+
+    def show = {
+        CustomerMaster customerMaster = null
+        List deliveryManList = new ArrayList()
+        SecondaryDemandOrder secondaryDemandOrder = new SecondaryDemandOrder()
+        ApplicationUser applicationUser = (ApplicationUser) springSecurityService.getCurrentUser()
+        UserType userType = applicationUser.userType
+        if(userType){
+            if(userType.id == ApplicationConstants.USER_TYPE_OTHER && applicationUser.customerMasterId){
+                params.put("customerId", applicationUser.customerMasterId)
+                    deliveryManList = (List) listDeliveryManByAppicationUserGeoLocationAction.execute(params, null)
+            } else if(userType.id == ApplicationConstants.USER_TYPE_CUSTOMER && applicationUser.customerMasterId){
+                customerMaster = CustomerMaster.get(applicationUser.customerMasterId)
+            } else{
+                render (view: "unAuthorized")
+                return
+            }
+        }else{
+            render(view: "unAuthorized")
+            return
+        }
+        List list = enterpriseAutocompleteListAction.execute(applicationUser, null)
+        Map result = ["results": list, "total": list.size()]
+        Map tentativeDeliveryManList = ["results": deliveryManList, "total": deliveryManList.size()]
+        render(template: "show", model: [secondaryDemandOrder: secondaryDemandOrder, result:result as JSON, list: list, applicationUser:applicationUser,
+                tentativeDeliveryManList: tentativeDeliveryManList as JSON, userType:  userType.id, customerMaster: customerMaster, deliveryManList: deliveryManList])
+    }
+    def getGeoLocationForCustomer = {
+        List geoLocationList =  (List)listDistributionPointByApplicationUser.getGeolocationByCustomer(params)
+        render geoLocationList as JSON
+    }
+    def create = {
+        ApplicationUser applicationUser=session?.applicationUser
+        Message message = createSecondaryDemandOrderAction.execute(params, applicationUser)
+        render message as JSON
+    }
+
+
+    def edit = {
+        render readSecondaryDemandOrderAction.execute(params, null) as JSON
+    }
+
+    def update = {
+        ApplicationUser applicationUser = session?.applicationUser
+        Message message = updateSecondaryDemandOrderAction.execute(params, applicationUser)
+        render message as JSON
+    }
+
+    def delete = {
+        SecondaryDemandOrder secondaryDemandOrder = deleteSecondaryDemandOrderAction.execute(params, null);
+        Message message = null
+        if (secondaryDemandOrder) {
+            int rowCount = (int) deleteSecondaryDemandOrderAction.preCondition(null, secondaryDemandOrder);
+            if (rowCount > 0) {
+                message = deleteSecondaryDemandOrderAction.getSuccessMessageForUI(secondaryDemandOrder, deleteSecondaryDemandOrderAction.SUCCESS_DELETE);
+            } else {
+                message = deleteSecondaryDemandOrderAction.getErrorMessageForUI(secondaryDemandOrder, deleteSecondaryDemandOrderAction.FAIL_DELETE);
+            }
+        } else {
+            message = deleteSecondaryDemandOrderAction.getErrorMessageForUI(secondaryDemandOrder, deleteSecondaryDemandOrderAction.ALREADY_DELETED);
+        }
+        render message as JSON;
+    }
+    def listCustomer = {
+        render listCustomerByEnterpriseAction.execute(params,null) as JSON
+    }
+
+    def popupCustomerListPanel = {
+        List customerList = new ArrayList()
+        customerList = (List) listCustomerByEnterpriseAction.execute(params,null)
+        render(view: 'popUpCustomerList', model: [aaData: customerList as JSON])
+    }
+    def popupCustomerDeliveryListPanel={
+        List list= distributionPointDefaultCustomerAction.execute(params, null)
+        render(view: 'popupCustomerDeliveryList', model: [aaData: list as JSON])
+    }
+
+    def listProduct = {
+        if(!params.customerId){
+            params.put('customerId', params.id)
+        }
+//        if(!params.territorySubAreaId){
+//            params.put('territorySubAreaId', params.id)
+//        }
+        render listProductPriceByCustomerAction.execute(params,null) as JSON
+    }
+    def popupProductListPanel={
+        if(!params.customerId){
+            params.put('customerId', params.id)
+        }
+        render(view: 'popupProductList', model: ['customerId': params.customerId,'territorySubAreaId': params.territorySubAreaId])
+    }
+
+    def jsonProductList = {
+        Map map = [:]
+        List data = (List)listProductPriceByCustomerAction.execute(params, null)
+        map.put("aaData", data)
+        render map as JSON
+    }
+
+    def searchProduct={
+        render(view: 'searchProductByOrder')
+    }
+
+    def listOrderNoAutoComplete={
+        ApplicationUser applicationUser = session?.applicationUser
+        render loadOrderNoAutoCompleteAction.execute(params,applicationUser) as JSON
+    }
+
+   def editDemandOrder = {
+       ApplicationUser applicationUser = session?.applicationUser
+       Map dataMap = listForUpdateDemandOrderAction.execute(applicationUser,params)
+       Map result = ["results": dataMap.enterpriseList, "total": dataMap.enterpriseList.size()]
+       render(template: "showDemandOrderForUpdate", model: [secondaryDemandOrderList: dataMap.listForUpdate, result:result as JSON, list: dataMap.enterpriseList,applicationUser:applicationUser,id:params?.id])
+   }
+
+    def updateOrderQty={
+        ApplicationUser applicationUser = session?.applicationUser
+        Map dataMap=listForUpdateDemandOrderAction.execute(applicationUser,params)
+        Map result = ["results": dataMap.enterpriseList, "total": dataMap.enterpriseList.size()]
+        render(view: 'updateOrderQty', model: [secondaryDemandOrderList: dataMap.listForUpdate, result:result as JSON, list: dataMap.enterpriseList,applicationUser:applicationUser])
+    }
+
+    def listProductForUpdate = {
+        render listProductByOrderForUpdateAction.execute(params,null) as JSON
+    }
+
+    def popupProductListForUpdatePanel={
+        List list= listProductByOrderForUpdateAction.execute(params,null)
+        render(view: 'popupProductList', model: [aaData: list as JSON])
+    }
+
+    def listProductByOrder = {
+        ApplicationUser applicationUser = session?.applicationUser
+        render listProductByOrderAction.execute(params, applicationUser) as JSON
+    }
+
+    def listOrderNoAutoCompleteForUpdate = {
+        ApplicationUser applicationUser = session?.applicationUser
+        render loadOrderNoAutoCompleteForUpdateAction.execute(params,applicationUser) as JSON
+    }
+
+    def listPrintInvoiceNoAutoComplete = {
+        ApplicationUser applicationUser = session?.applicationUser
+        render printSecondaryInvoiceAutoCompleteAction.execute(params, applicationUser) as JSON
+    }
+}

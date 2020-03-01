@@ -1,0 +1,25 @@
+package com.bits.bdfp.inventory.setup.incentive
+
+import com.docu.security.ApplicationUser
+
+class TargetBasedIncentive {
+    String                      programName
+    Date                        effectiveDateFrom
+    Date                        effectiveDateTo
+    String                      comments
+
+    ApplicationUser             userCreated
+    ApplicationUser             userUpdated
+    Date                        dateCreated
+    Date                        lastUpdated
+
+    static constraints = {
+        programName(nullable: false, blank: false, unique: true)
+        effectiveDateFrom(nullable: false, blank: false)
+        effectiveDateTo(nullable: true, blank: true)
+        comments(blank: true, nullable: true)
+
+        userCreated(nullable: false, blank: false)
+        userUpdated(nullable: true, blank: true)
+    }
+}

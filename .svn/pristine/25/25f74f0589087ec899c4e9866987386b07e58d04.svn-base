@@ -1,0 +1,620 @@
+package com.bits.bdfp.inventory.warehouse
+
+import com.bits.bdfp.inventory.product.FinishProduct
+import com.bits.bdfp.util.ApplicationConstants
+import com.docu.common.Action
+import com.docu.common.Service
+import com.docu.security.ApplicationUser
+import groovy.sql.Sql
+import org.apache.jasper.tagplugins.jstl.core.Catch
+import org.springframework.transaction.annotation.Transactional
+
+import javax.sql.DataSource
+
+class FinishGoodWarehouseService extends Service {
+    static transactional = false
+    DataSource dataSource
+    Sql sql
+
+    @Transactional
+    public FinishGoodWarehouse create(Object object) {
+        try{
+        FinishGoodWarehouse finishGoodWarehouse = (FinishGoodWarehouse) object.finishGoodWirehouse
+        List<FinishGoodWarehouseDetails> finishGoodWarehouseDetailsList = object?.finishGoodWarehouseDetailsList
+        List<FinishGoodStock> finishGoodStockList = object?.finishGoodStockList
+        List<FinishGoodStockTransaction> finishGoodStockTransactionList = object?.finishGoodStockTransactionList
+        if (finishGoodWarehouse.save(validate: false, insert: true)) {
+            finishGoodWarehouseDetailsList.each { finishGoodWarehouseDetails->
+                finishGoodWarehouseDetails.save()
+            }
+            finishGoodStockList.each { finishGoodStock->
+                finishGoodStock.save()
+            }
+            finishGoodStockTransactionList.each { finishGoodStockTransaction->
+                finishGoodStockTransaction.save()
+            }
+
+            return finishGoodWarehouse
+        }
+        }catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional
+    public Integer update(Object object) {
+        FinishGoodWarehouse finishGoodWarehouse = (FinishGoodWarehouse) object
+        if (finishGoodWarehouse.save()) {
+            return new Integer(1)
+        } else {
+            return new Integer(0)
+        }
+    }
+
+    @Transactional
+    public Integer delete(Object object) {
+        FinishGoodWarehouse finishGoodWarehouse = (FinishGoodWarehouse) object
+        finishGoodWarehouse.delete()
+        return new Integer(1)
+    }
+
+    @Transactional(readOnly = true)
+    public Map getListForGrid(Action action) {
+        List<FinishGoodWarehouse> objList = FinishGoodWarehouse.withCriteria {
+            if (action.resultPerPage != -1) {
+                maxResults(action.resultPerPage)
+            }
+            firstResult(action.start)
+            order(action.sortCol, action.sortOrder)
+        }
+        long total = FinishGoodWarehouse.count()
+        return [objList: objList, count: total]
+    }
+
+    @Transactional(readOnly = true)
+    public List<FinishGoodWarehouse> list() {
+        return FinishGoodWarehouse.list()
+    }
+
+    @Transactional(readOnly = true)
+    public FinishGoodWarehouse read(Long id) {
+        return FinishGoodWarehouse.read(id)
+    }
+
+    @Transactional(readOnly = true)
+    public FinishGoodWarehouse search(String fieldName, String fieldValue) {
+        String query = "from Warehouse as docu where docu." + fieldName + " = '" + fieldValue + "'"
+        return FinishGoodWarehouse.find(query)
+    }
+
+    @Transactional(readOnly = true)
+    public List inventoryListForFinishGood(ApplicationUser applicationUser) {
+        try{
+            sql = new Sql(dataSource)
+            String strSql = """
+                SELECT `warehouse`.`id`, CONCAT(`warehouse`.`name`,'[',`warehouse`.`code`,']') AS `name`
+                FROM `warehouse`
+                    INNER JOIN `enterprise_configuration`
+                        ON (`enterprise_configuration`.`id` = `warehouse`.`enterprise_configuration_id`)
+                    INNER JOIN `distribution_point_warehouse`
+                        ON (`distribution_point_warehouse`.`warehouse_id` = warehouse.`id`)
+                    INNER JOIN `distribution_point`
+                        ON (`distribution_point`.`id` = `distribution_point_warehouse`.`distribution_point_id`)
+                WHERE `distribution_point`.`is_factory` = TRUE
+                    AND `enterprise_configuration`.`id` IN (SELECT `application_user_enterprise`.`enterprise_configuration_id`
+                                                            FROM `application_user_enterprise`
+                                                            WHERE `application_user_enterprise`.`application_user_id` = ${applicationUser.id}
+                                                                AND `application_user_enterprise`.`is_active` IS TRUE)
+            """
+            return sql.rows(strSql)
+        }catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    public List getSubInventoryListByFactoryInventory(Object applicationUser){
+        String query = """
+            SELECT sw.id, CONCAT(sw.name, ' (' , st.name, ')') AS name
+            FROM distribution_point_warehouse dpw
+            INNER JOIN distribution_point dp
+                    ON dp.id = dpw.distribution_point_id
+            INNER JOIN sub_warehouse sw
+                    ON sw.warehouse_id = dpw.warehouse_id
+            INNER JOIN sub_warehouse_type st
+                    ON sw.sub_warehouse_type_id = st.id
+            WHERE dp.is_factory = TRUE;
+        """
+
+        sql = new Sql(dataSource)
+
+        List subInventoryList = sql.rows(query)
+        return subInventoryList
+    }
+
+    @Transactional(readOnly = true)
+    public List selectSubwarehouseByWarehouse(Object params) {
+        sql = new Sql(dataSource)
+        List subwareHouseList = []
+        String strSql = """SELECT sub_warehouse.id,sub_warehouse.name
+              FROM
+              sub_warehouse
+              WHERE sub_warehouse.warehouse_id=${params.id}"""
+        subwareHouseList = sql.rows(strSql)
+        return subwareHouseList
+    }
+
+    @Transactional(readOnly = true)
+    public List productListForFinishGood(Object params, ApplicationUser applicationUser) {
+        List productList = []
+        String query = ""
+        sql = new Sql(dataSource)
+        if (params.query) {
+            query = """ AND (finish_product.name LIKE '%${params.query}%' OR finish_product.code LIKE '%${params.query}%')
+                """
+        }
+        String strSql = """
+            SELECT finish_product.id, CONCAT(finish_product.name,'[',finish_product.code,']') AS name
+            FROM finish_product
+                INNER JOIN enterprise_configuration
+                    ON (enterprise_configuration.id = finish_product.enterprise_configuration_id)
+            WHERE enterprise_configuration.id IN (SELECT enterprise_configuration.id
+                FROM application_user_enterprise
+                    INNER JOIN enterprise_configuration
+                        ON (enterprise_configuration.id = application_user_enterprise.enterprise_configuration_id)
+                    WHERE application_user_enterprise.application_user_id = ${applicationUser.id}
+                    AND  application_user_enterprise.is_active IS TRUE)
+                AND finish_product.is_active = TRUE
+                ${query}
+        """
+
+        productList = sql.rows(strSql)
+        return productList
+    }
+
+    @Transactional(readOnly = true)
+    public FinishGoodStock findFinishGoodByProduct(FinishProduct finishProduct) {
+        return FinishGoodStock.findByFinishProduct(finishProduct)
+
+    }
+    @Transactional(readOnly = true)
+    public FinishGoodStock findBySubWarehouseAndFinishProductAndBatchNo(SubWarehouse subWarehouse, FinishProduct finishProduct, String batchNo){
+        List<FinishGoodStock> finishGoodStockList = FinishGoodStock.withCriteria {
+            eq("subWarehouse", subWarehouse)
+            eq("finishProduct", finishProduct)
+            eq("batchNo", batchNo)
+        }
+        if(finishGoodStockList && finishGoodStockList.size() > 0){
+            return finishGoodStockList.first()
+        } else{
+            return null
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public FinishGoodBatchStock findFinishGoodBatchById(Long id) {
+        return FinishGoodBatchStock.findById(id)
+
+    }
+    @Transactional(readOnly = true)
+    public List findByDateTimeAndBatchControl(FinishGoodWarehouse finishGoodWarehouse) {
+        List<FinishGoodWarehouse> list = FinishGoodWarehouse.createCriteria().list {
+            and {
+                eq("dateTransaction", finishGoodWarehouse.dateTransaction)
+                eq("timeTransaction", finishGoodWarehouse.timeTransaction)
+                eq("batchNo", finishGoodWarehouse.batchNo)
+            }
+        }
+        return list
+
+    }
+
+    @Transactional(readOnly = true)
+    public Map getListFinishGoodInventory(Action action, Object params, ApplicationUser applicationUser) {
+        try{
+            sql = new Sql(dataSource)
+            String strLIMIT = "";
+            String offSet = ""
+            String subWarehouse = ""
+            String warehouse = ""
+            String deliveryDate = ""
+            if (params.warehouse) {
+                warehouse = """
+                AND finish_good_warehouse.`warehouse_id`=${params.warehouse}
+
+            """
+            }
+            if (params.subWarehouse) {
+                subWarehouse = """
+                AND finish_good_warehouse.`sub_warehouse_id`=${params.subWarehouse}
+
+            """
+            }
+
+            if (params.deliveryDateFrom && params.deliveryDateTo) {
+                deliveryDate = """
+                 AND  DATE(finish_good_warehouse.`date_transaction`)
+                 BETWEEN STR_TO_DATE('${params.deliveryDateFrom}','%d-%m-%Y')  AND STR_TO_DATE('${params.deliveryDateTo}','%d-%m-%Y')
+
+            """
+            }
+            if (action.resultPerPage != -1) {
+                strLIMIT = """LIMIT ${action.resultPerPage}"""
+                offSet = """
+                        OFFSET ${action.start}
+                       """
+            } else {
+                action.resultPerPage = -1;
+            }
+
+            String strSql = """
+                SELECT finish_good_warehouse.id,finish_good_warehouse.`batch_no`,finish_product.`name` AS p_name,
+                    finish_product.`code` AS p_code, finish_good_warehouse.`transaction_no`,finish_good_warehouse_details.`product_ref_no`,
+                    measure_unit_configuration.`name` AS uom,
+                    finish_good_warehouse_details.`quantity`,
+                    finish_good_warehouse_details.`cost`
+                FROM `finish_good_warehouse`
+                    INNER JOIN `finish_good_warehouse_details`
+                        ON `finish_good_warehouse`.id=`finish_good_warehouse_details`.`finish_good_warehouse_id`
+                    INNER JOIN `finish_product`
+                        ON `finish_product`.id=finish_good_warehouse_details.`finish_product_id`
+                    INNER JOIN `measure_unit_configuration`
+                        ON `measure_unit_configuration`.id=finish_product.`measure_unit_configuration_id`
+                    INNER JOIN `warehouse`
+                        ON finish_good_warehouse.`warehouse_id`= `warehouse`.`id`
+                    INNER JOIN `enterprise_configuration`
+                        ON enterprise_configuration.id=warehouse.`enterprise_configuration_id`
+                    INNER JOIN `application_user_enterprise`
+                        ON enterprise_configuration.id=`application_user_enterprise`.`enterprise_configuration_id`
+                WHERE `application_user_enterprise`.`application_user_id` = ${applicationUser.id}
+                    ${deliveryDate}
+                    ${warehouse}
+                    ${subWarehouse}
+                ORDER BY finish_product.`name`, finish_good_warehouse.`batch_no`
+                ${strLIMIT}
+                ${offSet}
+            """
+            List objList = sql.rows(strSql)
+            int resultCount = 0
+            if (objList && objList.size() > 0) {
+                resultCount = objList.size()
+            }
+
+            return [objList: objList, count: resultCount]
+        } catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+    @Transactional(readOnly = true)
+    public Map getListIssuedItems(Action action, Object params, ApplicationUser applicationUser) {
+        sql = new Sql(dataSource)
+        String strLIMIT = "";
+        String offSet = ""
+        String filter = ""
+        if (params.warehouse) {
+            filter += """
+                AND `finish_good_stock`.`sub_warehouse_id` = ${params.warehouse}
+            """
+        }
+        if (params.subWarehouse) {
+            filter += """
+                AND `finish_good_stock`.`sub_warehouse_id` = ${params.subWarehouse}
+            """
+        }
+
+        if (params.deliveryDateFrom && params.deliveryDateTo) {
+            filter = """
+                AND  DATE(`finish_good_stock_transaction`.`date_created`)
+                BETWEEN STR_TO_DATE('${params.deliveryDateFrom}','${ApplicationConstants.DATE_FORMAT_DB}')  AND STR_TO_DATE('${params.deliveryDateTo}','${ApplicationConstants.DATE_FORMAT_DB}')
+            """
+        }
+        if (action.resultPerPage != -1) {
+            strLIMIT = """LIMIT ${action.resultPerPage}"""
+            offSet = """
+                OFFSET ${action.start}
+            """
+        } else {
+            action.resultPerPage = -1;
+        }
+
+        String strSql = """
+            SELECT
+                `finish_good_stock_transaction`.`id`,
+                `finish_product`.`code` AS `product_code`,
+                `finish_product`.`name` AS `product_name`,
+                `finish_good_stock_transaction`.`out_quantity`,
+                `measure_unit_configuration`.`name` AS `uom`,
+                `finish_good_stock`.`batch_no`,
+                `finish_good_stock_transaction`.`unit_price`,
+                `invoice`.`code` AS `reference_no`,
+                `sub_warehouse`.`name` AS `sub_inventory`,
+                `warehouse`.`name` AS `inventory`
+            FROM `finish_good_stock_transaction`
+                INNER JOIN `finish_good_stock` ON (`finish_good_stock_transaction`.`finish_good_stock_id` = `finish_good_stock`.`id`)
+                INNER JOIN `finish_product` ON (`finish_good_stock`.`finish_product_id` = `finish_product`.`id`)
+                INNER JOIN `measure_unit_configuration` ON (`finish_product`.`measure_unit_configuration_id` = `measure_unit_configuration`.`id`)
+                INNER JOIN `sub_warehouse` ON ( `finish_good_stock`.`sub_warehouse_id` = `sub_warehouse`.`id`)
+                INNER JOIN `warehouse` ON (`sub_warehouse`.`warehouse_id` = `warehouse`.`id`)
+                INNER JOIN `invoice` ON (`finish_good_stock_transaction`.`out_invoice_id` = `invoice`.`id`)
+            WHERE `finish_good_stock_transaction`.`out_quantity` > 0
+                ${filter}
+            ORDER BY `finish_product`.`name`, `finish_good_stock`.`batch_no`
+            ${strLIMIT}
+            ${offSet}
+        """
+        List objList = sql.rows(strSql)
+        int resultCount = 0
+        if (objList && objList.size() > 0) {
+            resultCount = objList.size()
+        }
+
+        return [objList: objList, count: resultCount]
+    }
+    @Transactional(readOnly = true)
+    public Map getListIssuedItemsByDistributionPoint(Action action, Object params, ApplicationUser applicationUser) {
+        sql = new Sql(dataSource)
+        String strLIMIT = "";
+        String offSet = ""
+
+        if (action.resultPerPage != -1) {
+            strLIMIT = """LIMIT ${action.resultPerPage}"""
+            offSet = """
+                    OFFSET ${action.start}
+                   """
+        } else {
+            action.resultPerPage = -1;
+        }
+
+        String condition = ""
+        if(params.subWarehouseId){
+            condition = """ AND `sub_warehouse`.`id` = ${params.subWarehouseId} """
+        }
+
+        String strSql = """
+            SELECT `finish_product`.`id`, `finish_product`.`code`, `finish_product`.`name`, SUM(`distribution_point_stock_transaction`.`in_quantity`) AS received_quantity, SUM(`distribution_point_stock_transaction`.`out_quantity`) AS `delivered_quantity`,
+                ROUND(SUM(`distribution_point_stock_transaction`.`unit_price` * (`distribution_point_stock_transaction`.`in_quantity` + `distribution_point_stock_transaction`.`out_quantity`))/SUM(`distribution_point_stock_transaction`.`in_quantity` + `distribution_point_stock_transaction`.`out_quantity`),2) AS `unit_price`,
+                ROUND(SUM((`distribution_point_stock_transaction`.`in_quantity` - `distribution_point_stock_transaction`.`out_quantity`) * `distribution_point_stock_transaction`.`unit_price`),2) AS amount
+            FROM `distribution_point_stock_transaction`
+                INNER JOIN `distribution_point_stock` ON (`distribution_point_stock_transaction`.`distribution_point_stock_id` = `distribution_point_stock`.`id`)
+                INNER JOIN `finish_product`
+                    ON (`finish_product`.id = `distribution_point_stock`.`finish_product_id`)
+                INNER JOIN `sub_warehouse`
+                    ON (`sub_warehouse`.`id` = `distribution_point_stock`.`sub_warehouse_id`)
+            WHERE `sub_warehouse`.`warehouse_id` = ${params.warehouseId}
+            ${condition}
+            GROUP BY `distribution_point_stock`.`finish_product_id`
+            ${strLIMIT}
+            ${offSet}
+        """
+        List objList = sql.rows(strSql)
+        int resultCount = 0
+        if (objList && objList.size() > 0) {
+            resultCount = objList.size()
+        }
+
+        return [objList: objList, count: resultCount]
+    }
+    @Transactional(readOnly = true)
+    public Map getListOnHandQtyBatch(Action action, Object params, ApplicationUser applicationUser) {
+        sql = new Sql(dataSource)
+        String strLIMIT = "";
+        String offSet = ""
+        String filter = ""
+        if (params.warehouse) {
+            filter += """
+                AND `sub_warehouse`.`warehouse_id` = ${params.warehouse}
+            """
+        }
+        if (params.subWarehouse) {
+            filter += """
+                AND finish_good_stock.`sub_warehouse_id` = ${params.subWarehouse}
+            """
+        }
+
+        if (params.deliveryDateFrom && params.deliveryDateTo) {
+            filter += """
+                AND  DATE(finish_good_stock_transaction.`date_created`)
+                BETWEEN STR_TO_DATE('${params.deliveryDateFrom}', '${ApplicationConstants.DATE_FORMAT_DB}') AND STR_TO_DATE('${params.deliveryDateTo}', '${ApplicationConstants.DATE_FORMAT_DB}')
+            """
+        }
+        if (action.resultPerPage != -1) {
+            strLIMIT = """LIMIT ${action.resultPerPage}"""
+            offSet = """
+                    OFFSET ${action.start}
+                   """
+        } else {
+            action.resultPerPage = -1;
+        }
+
+        String strSql = """
+            SELECT `finish_good_stock`.id, `finish_good_stock`.`batch_no`, `finish_product`.`code` AS `product_code`, `finish_product`.`name` AS `product_name`,
+                SUM(`finish_good_stock_transaction`.`in_quantity` - `finish_good_stock_transaction`.`out_quantity`) AS `quantity`
+            FROM `finish_good_stock`
+                INNER JOIN `finish_product` ON (`finish_good_stock`.`finish_product_id` = `finish_product`.`id`)
+                INNER JOIN `finish_good_stock_transaction` ON (`finish_good_stock_transaction`.`finish_good_stock_id` = `finish_good_stock`.id)
+                INNER JOIN `sub_warehouse` ON ( `finish_good_stock`.`sub_warehouse_id` = `sub_warehouse`.`id`)
+            WHERE 1 = 1
+                ${filter}
+            GROUP BY `finish_good_stock`.`batch_no`,`finish_good_stock`.`finish_product_id`
+            ORDER BY `finish_product`.`name` ASC
+            ${strLIMIT}
+            ${offSet}
+        """
+        List objList = sql.rows(strSql)
+        int resultCount = 0
+        if (objList && objList.size() > 0) {
+            resultCount = objList.size()
+        }
+
+        return [objList: objList, count: resultCount]
+    }
+
+    @Transactional(readOnly = true)
+    public Map getListOnHandQtyItem(Action action, Object params, ApplicationUser applicationUser) {
+        sql = new Sql(dataSource)
+        String strLIMIT = "";
+        String offSet = ""
+        String filter = ""
+        if (params.warehouse) {
+            filter += """
+                AND `sub_warehouse`.`warehouse_id` = ${params.warehouse}
+            """
+        }
+        if (params.subWarehouse) {
+            filter += """
+                AND finish_good_stock.`sub_warehouse_id` = ${params.subWarehouse}
+            """
+        }
+
+        if (params.deliveryDateFrom && params.deliveryDateTo) {
+            filter += """
+                AND  DATE(finish_good_stock_transaction.`date_created`)
+                BETWEEN STR_TO_DATE('${params.deliveryDateFrom}', '${ApplicationConstants.DATE_FORMAT_DB}') AND STR_TO_DATE('${params.deliveryDateTo}', '${ApplicationConstants.DATE_FORMAT_DB}')
+            """
+        }
+        if (action.resultPerPage != -1) {
+            strLIMIT = """LIMIT ${action.resultPerPage}"""
+            offSet = """
+                    OFFSET ${action.start}
+                   """
+        } else {
+            action.resultPerPage = -1;
+        }
+
+        String strSql = """
+                SELECT `finish_good_stock`.id, `finish_product`.`code` AS `product_code`, `finish_product`.`name` AS `product_name`,
+                SUM(`finish_good_stock_transaction`.`in_quantity` - `finish_good_stock_transaction`.`out_quantity`) AS `quantity`
+            FROM `finish_good_stock`
+                INNER JOIN `finish_product` ON (`finish_good_stock`.`finish_product_id` = `finish_product`.`id`)
+                INNER JOIN `finish_good_stock_transaction` ON (`finish_good_stock_transaction`.`finish_good_stock_id` = `finish_good_stock`.id)
+                INNER JOIN `sub_warehouse` ON ( `finish_good_stock`.`sub_warehouse_id` = `sub_warehouse`.`id`)
+            WHERE 1 = 1
+                ${filter}
+            GROUP BY `finish_good_stock`.`finish_product_id`
+            ORDER BY `finish_product`.`name` ASC
+                ${strLIMIT}
+                ${offSet}
+        """
+        List objList = sql.rows(strSql)
+        int resultCount = 0
+        if (objList && objList.size() > 0) {
+            resultCount = objList.size()
+        }
+
+        return [objList: objList, count: resultCount]
+    }
+
+    @Transactional(readOnly = true)
+    public List transactionProductReference(Object params) {
+        try{
+            sql = new Sql(dataSource)
+            String transaction_query = ''
+            if (params.query) {
+                transaction_query = """ AND (`finish_good_warehouse`.`transaction_no` LIKE '%${params.query}%' OR `finish_good_warehouse_details`.`product_ref_no` LIKE '%${params.query}%')
+                """
+            }
+            String strSql = """
+                SELECT DISTINCT `finish_good_warehouse`.`id`, `finish_good_warehouse`.`transaction_no` AS `ref_no`, "Transaction Reference" AS `type`
+                FROM `finish_good_warehouse`
+                    INNER JOIN `finish_good_warehouse_details` ON ( `finish_good_warehouse_details`.`finish_good_warehouse_id` = `finish_good_warehouse`.`id`)
+                    INNER JOIN `finish_good_stock_transaction` ON (`finish_good_stock_transaction`.`finish_good_warehouse_details_id` = `finish_good_warehouse_details`.`id`)
+                    INNER JOIN `finish_good_stock` ON (`finish_good_stock_transaction`.`finish_good_stock_id` = `finish_good_stock`.`id`)
+                WHERE `finish_good_stock`.`out_quantity` = 0
+                    ${transaction_query}
+            """
+            return sql.rows(strSql)
+        } catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Map productListForReverseFinishGood(Object params) {
+        try{
+            sql = new Sql(dataSource)
+            String strSql = """
+                SELECT `finish_good_warehouse_details`.`id`, `finish_good_warehouse`.`id` AS `good_id`,
+                `finish_product`.`name`, `finish_good_stock_transaction`.`in_quantity` AS `quantity`, `measure_unit_configuration`.`name` AS `uom`,
+                `finish_good_warehouse`.`batch_no`, `finish_good_warehouse_details`.`cost`, `warehouse`.`name` AS `ware_house_name`,
+                `sub_warehouse`.`name` AS `sub_ware_house_name`, `finish_good_warehouse_details`.product_ref_no
+                FROM
+                `finish_good_warehouse`
+                    INNER JOIN `finish_good_warehouse_details` ON (`finish_good_warehouse_details`.`finish_good_warehouse_id` = `finish_good_warehouse`.`id`)
+                    INNER JOIN `finish_product` ON (`finish_product`.`id` = `finish_good_warehouse_details`.`finish_product_id`)
+                    INNER JOIN `finish_good_stock_transaction` ON  (`finish_good_stock_transaction`.`finish_good_warehouse_details_id` = `finish_good_warehouse_details`.`id`)
+                    INNER JOIN `finish_good_stock` ON (`finish_good_stock_transaction`.`finish_good_stock_id` = `finish_good_stock`.`id`)
+                    INNER JOIN `measure_unit_configuration` ON `measure_unit_configuration`.`id` = `finish_product`.`measure_unit_configuration_id`
+                    INNER JOIN `warehouse` ON `warehouse`.`id` = `finish_good_warehouse`.`warehouse_id`
+                    INNER JOIN `sub_warehouse` ON `sub_warehouse`.`id` = `finish_good_warehouse`.`sub_warehouse_id`
+                WHERE `finish_good_stock`.`out_quantity` = 0
+                    AND (finish_good_warehouse_details.product_ref_no = '${params.query}'
+                    OR finish_good_warehouse.transaction_no = '${params.query}')
+            """
+            List productList = sql.rows(strSql)
+            return [objList: productList, count: productList?.size()]
+        } catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public FinishGoodWarehouseDetails finishGoodWarehouseDetailsById(Long id) {
+        return FinishGoodWarehouseDetails.read(id)
+    }
+
+    @Transactional
+    public Integer reverseFinishGood(Object object) {
+        try{
+            List<FinishGoodStock> finishGoodStockList = object?.finishGoodStockList
+            List<FinishGoodWarehouseDetails> finishGoodDetailsDeleteList = object?.detailsUpdateList
+            List<FinishGoodStockTransaction> finishGoodStockTransactionList = object?.finishGoodStockTransactionList
+
+            finishGoodStockTransactionList.each { finishGoodStockTransaction->
+                finishGoodStockTransaction.save()
+            }
+
+            finishGoodStockList.each { finishGoodStock->
+                finishGoodStock.save()
+            }
+
+            finishGoodDetailsDeleteList.each { finishGoodWarehouseDetails->
+                finishGoodWarehouseDetails.save()
+            }
+
+            return new Integer(1)
+        } catch (Exception ex){
+            log.error(ex.message)
+            throw new RuntimeException(ex.message)
+        }
+    }
+
+    @Transactional
+    public List<FinishGoodWarehouseDetails> existingList(FinishGoodWarehouse finishGoodWarehouse){
+        List existingList=FinishGoodWarehouseDetails.findAllByFinishGoodWarehouse(finishGoodWarehouse)
+    }
+
+    @Transactional(readOnly = true)
+    public FinishGoodBatchStock finishGoodBatchStockByProductAndBatch(FinishProduct finishProduct,String batch) {
+        return FinishGoodBatchStock.findByFinishProductAndBatchNo(finishProduct,batch)
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<FinishGoodBatchStock> batchWiseFinisGoodStockList(FinishProduct finishProduct) {
+        List<FinishGoodBatchStock> list = FinishGoodBatchStock.createCriteria().list {
+            and {
+                eq("finishProduct", finishProduct)
+                ge("quantity", 1.0D)
+            }
+            order("dateCreated","asc")
+        }
+        return list
+
+    }
+}
+
+

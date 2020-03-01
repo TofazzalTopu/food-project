@@ -1,0 +1,119 @@
+package com.bits.bdfp.promotion
+
+import com.bits.bdfp.common.CountryInfo
+import com.docu.common.Message
+import com.docu.commons.DateUtil
+import com.docu.security.ApplicationUser
+import grails.converters.JSON
+import org.springframework.beans.factory.annotation.Autowired
+
+class PromotionController {
+
+    @Autowired
+    private CreatePromotionAction createPromotionAction
+    @Autowired
+    private ListPromotionAction listPromotionAction
+    @Autowired
+    private ReadPromotionInfoAction readPromotionInfoAction
+    @Autowired
+    private UpdatePromotionInfoAction updatePromotionInfoAction
+    @Autowired
+    private DeletePromotionInfoAction deletePromotionInfoAction
+    @Autowired
+    private SearchPromotionInfoAction searchPromotionInfoAction
+
+    static allowedMethods = [create: "POST", update: "POST", delete: "POST"]
+
+    def list = {
+        List list = listPromotionAction.execute(params, null)
+        render listPromotionAction.postCondition(null, list) as JSON
+    }
+
+    def show = {
+        Promotion promotion = new Promotion()
+        String asOfDate = DateUtil.getCurrentDateFormatAsString()
+        render(view: "show", model: [promotion: promotion, asOfDate: asOfDate])
+    }
+
+    def create = {
+        ApplicationUser applicationUser = session?.applicationUser
+        Promotion promotionInstance = createPromotionAction.preCondition(applicationUser, params)
+        Message message = null
+        if (promotionInstance == null) {
+            message = createPromotionAction.getValidationErrorMessage(promotionInstance)
+        } else {
+            promotionInstance = createPromotionAction.execute(promotionInstance, params)
+            if (promotionInstance) {
+                message = createPromotionAction.getMessage(promotionInstance, Message.SUCCESS, "Promotion Created Successfully")
+            } else {
+                message = createPromotionAction.getMessage(promotionInstance, Message.ERROR, createPromotionAction.FAIL_SAVE)
+            }
+        }
+        render message as JSON
+    }
+    def edit = {
+        render readPromotionInfoAction.execute(params, null) as JSON
+    }
+
+    def update = {
+        ApplicationUser applicationUser = session?.applicationUser
+        Promotion promotion = new Promotion(params)
+        Object object = updatePromotionInfoAction.preCondition(params, applicationUser)
+        Message message = null
+        if (object == false) {
+            message = updatePromotionInfoAction.getValidationErrorMessage(promotion)
+        } else {
+            int noOfRows = (int) updatePromotionInfoAction.execute(null, object)
+            if (noOfRows > 0) {
+                message = updatePromotionInfoAction.getMessage(promotion, Message.SUCCESS, "Promotion Updated Successfully")
+            } else {
+                message = updatePromotionInfoAction.getMessage(promotion, Message.ERROR, updatePromotionInfoAction.FAIL_UPDATE)
+            }
+        }
+        render message as JSON
+    }
+
+    def inactive = {
+        ApplicationUser applicationUser = session?.applicationUser
+        Promotion promotion = new Promotion(params)
+        Object object = updatePromotionInfoAction.preConditionInactive(params, applicationUser)
+        Message message = null
+        if (object == false) {
+            message = updatePromotionInfoAction.getValidationErrorMessage(promotion)
+        } else {
+            int noOfRows = (int) updatePromotionInfoAction.executeInactive(null, object)
+            if (noOfRows > 0) {
+                message = updatePromotionInfoAction.getMessage(promotion, Message.SUCCESS, "Promotion Deleted Successfully")
+            } else {
+                message = updatePromotionInfoAction.getMessage(promotion, Message.ERROR, updatePromotionInfoAction.FAIL_UPDATE)
+            }
+        }
+        render message as JSON
+    }
+
+    def delete = {
+        Promotion promotion = deletePromotionInfoAction.preCondition(params, null);
+        Message message = null
+        if (promotion) {
+            int rowCount = (int) deletePromotionInfoAction.execute(null, promotion);
+            if (rowCount > 0) {
+                message = deletePromotionInfoAction.getMessage(promotion, Message.SUCCESS, deletePromotionInfoAction.SUCCESS_DELETE);
+            } else {
+                message = deletePromotionInfoAction.getMessage(promotion, Message.ERROR, deletePromotionInfoAction.FAIL_DELETE);
+            }
+        } else {
+            message = deletePromotionInfoAction.getMessage(promotion, Message.ERROR, deletePromotionInfoAction.ALREADY_DELETED);
+        }
+        render message as JSON;
+    }
+
+    def search = {
+        Promotion promotion = searchPromotionInfoAction.execute(params.fieldName, params.fieldValue)
+        if (promotion) {
+            render promotion as JSON
+        } else {
+            render ''
+        }
+
+    }
+}

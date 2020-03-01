@@ -1,0 +1,705 @@
+<%@ page import="com.bits.bdfp.util.ApplicationConstants; com.docu.commons.CommonConstants" %>
+<script type="text/javascript" language="Javascript">
+    var jqGridProductList = null;
+
+    var allElements = new Array();
+    var elementIndex = 0;
+    var lastSel = -1;
+    var qtyText = '';
+    function checkForValue(elem) {
+        if (!elem) {
+            return [false, "Please enter marks."];
+        }
+        else {
+            return [true, ""];
+        }
+    }
+
+    var updateOrderEditor = {
+        onEnterKeyPressToGridCell: function () {
+            var callback = {
+                type: 'keydown',
+                fn: function (e) {
+                    var key = e.charCode || e.keyCode;
+                    if (key == 9) {
+                        if (this.name == allElements[allElements.length - 1].name) {
+                            e.preventDefault();
+                            jQuery('#jqgrid-grid-finishProduct').restoreRow(lastSel);
+                            updateOrderEditor.editGridCell(lastSel)
+                        }
+                    }
+                    else if (key == 13) {
+                        jQuery('#jqgrid-grid-finishProduct').restoreRow(lastSel);
+                        updateOrderEditor.editGridCell(lastSel)
+                        $("#transferQty").focus();
+                    }
+                }
+            };
+            return callback;
+        },
+
+        editGridCell: function (rowid) {
+            var qty = qtyText.value;
+            if(qty && rowid){
+                if(isNaN(qty)){
+                    var msg={"class":"com.docu.common.Message","messageBody":["Please enter number as quantity"],"messageTitle":"Message","type":0}
+                    MessageRenderer.render(msg);
+                }
+                else if(qty == 0){
+
+                }
+            }
+
+           /* else{
+                var msg={"class":"com.docu.common.Message","messageBody":["Please enter quantity"],"messageTitle":"Message","type":0}
+                MessageRenderer.render(msg);
+            }*/
+        }
+    };
+
+    $(document).ready(function() {
+        $('#ui-widget-header-text').html('Primary Demand Order');
+        textboxes = $("input:visible:not([disabled],[readonly]),select,button");
+        if ($.browser.mozilla) {
+            $(textboxes).keypress (checkForEnter);
+        } else {
+            $(textboxes).keydown (checkForEnter);
+        }
+
+        $("#quantity").format({precision: 2, allow_negative: false, autofix: true});
+
+        $("#gFormNewPrimaryDemandOrder").validationEngine({   //    client side validation
+            isOverflown: true,
+            overflownDIV: ".ui-layout-center"
+        });
+        $("#gFormNewPrimaryDemandOrder").validationEngine('attach');
+
+        $("#dateProposedDelivery").datepicker({
+            dateFormat: '${ApplicationConstants.JQUERY_UI_DATE_FORMAT}',
+            minDate: new Date()
+        }).attr("readonly", "readonly");
+
+        if(${distributionPointList.size() == 0}){
+            $('#distributionPoint').removeClass("validate[required]");
+        }else{
+            $('#distributionPoint').addClass("validate[required]");
+        }
+
+        loadCustomerForPrimaryDemandOrder();
+     /*  jqGridProductList = $("#jqgrid-grid-finishProduct").jqGrid({
+            url:'',
+            datatype: "local",
+            colNames:[
+                'ID',
+                'primaryDemandOrderDetailsId',
+                'Product Code',
+                'Product Name',
+                'Quantity',
+                'Rate',
+                'Amount',
+                ''
+            ],
+            colModel:[
+                {name:'id', index:'id', width:0, hidden:true},
+                {name:'primaryDemandOrderDetailsId', index:'primaryDemandOrderDetailsId', hidden: true},
+                {name:'productCode', index:'productCode', width:120, align:'center'},
+                {name:'productName', index:'productName', width:200, align:'left'},
+                {name:'quantity', index:'quantity', width:80, align:'center', sorttype:'number', formatter:"number", editable: true, editrules:{number:true}, formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 0}},
+                {name:'rate', index:'rate', width:80, align:'right', formatter:'currency', formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}},
+                {name:'amount', index:'amount', width:80, align:'right', formatter:'currency', formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}},
+                {name:'delete', index:'delete', width:30, align:'center', sortable:false}
+            ],
+            rowNum: -1,
+            viewrecords:true,
+            caption:"Product List",
+            autowidth:true,
+            height:true,
+            scrollOffset:0,
+            gridview:true,
+//            multiselect: true,
+            rownumbers: true,
+            cellEdit: true,
+            cellsubmit: 'clientArray',
+            cellurl: null,
+            footerrow : true,
+            gridComplete: function() {
+                calculateSummaryData();
+
+            },
+            onSelectRow: function(rowid, status) {
+//                executeEditSaleItem();
+            },
+            afterSaveCell : function(rowid,name,val,iRow,iCol) {
+                var rowData = $("#jqgrid-grid-finishProduct").jqGrid('getRowData', rowid);
+                rowData.amount = rowData.quantity * rowData.rate;
+                $('#jqgrid-grid-finishProduct').jqGrid('setRowData', rowid, rowData);
+                calculateSummaryData();
+            },
+            loadError: function (jqXHR, textStatus, errorThrown) {
+                MessageRenderer.renderErrorText(jqXHR.responseText,'');
+            }
+        });
+*/
+
+       $("#jqgrid-grid-finishProduct").jqGrid({
+            url: '',
+            datatype: "local",
+            colNames: [
+                'Product Name',
+                'Product ID',
+                'Qty In Ltr',
+                'Rate',
+                'Order Qty',
+                'Qty In Ltr',
+                'Amount'
+            ],
+            colModel: [
+                {name: 'productName', index: 'productName', width: 200, align: 'left'},
+                {name: 'productId', index: 'productId', width: 120, align: 'left', hidden:true},
+                {name: 'qtyInLtr', index: 'qtyInLtr', width: 100, align: 'left' , hidden:true},
+                {name: 'price', index: 'price', width: 100, align: 'left'},
+                {name: 'transferQty', index: 'transferQty', width: 100, align: 'center', editable: true, edittype: 'text', resizable: true,
+                    editoptions: {dataInit: function (elem) {
+                        qtyText = elem;
+                        $(elem).focus(function () {
+                            this.select();
+                        });
+                        $(elem).keypress(function(e){
+                            if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+                                return false;
+                            }
+                        })
+                    }, dataEvents: [updateOrderEditor.onEnterKeyPressToGridCell()]} },
+                    // }, dataEvents: [updateOrderEditor.onEnterKeyPressToGridCell()]}, editrules: {custom: true, custom_func: checkForValue}},
+                {name: 'qtyInLtrConvert', index: 'qtyInLtrConvert', width: 100, align: 'left', formatter:"number",  formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}, sortable: false},
+                {name: 'totalPrice', index: 'totalPrice', width: 100, align: 'left', formatter:"number",  formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}, sortable: false}
+            ],
+            rowNum: 200,
+            rowList: [50, 100, 150, 200, 250, 300],
+            pager: '#jqgrid-product-pager',
+            sortname: 'id',
+            viewrecords: true,
+            sortorder: "asc",
+            caption: "Available Products List",
+            autowidth: false,
+            height: true,
+            scrollOffset: 0,
+            rownumbers: true,
+           //   multiselect: true,
+            footerrow : true,
+            cellEdit: true,
+            cellsubmit: 'clientArray',
+            loadComplete: function (data) {
+               calculateSummaryData();
+            },
+            onSelectRow: function (rowid, status) {
+
+            },
+            afterSaveCell : function(rowid,name,val,iRow,iCol) {
+                var rowData = $("#jqgrid-grid-finishProduct").jqGrid('getRowData', rowid);
+                rowData.totalPrice = rowData.transferQty * rowData.price;
+                rowData.qtyInLtrConvert = rowData.transferQty * rowData.qtyInLtr;
+                $('#jqgrid-grid-finishProduct').jqGrid('setRowData', rowid, rowData);
+                $('#jqgrid-grid-finishProduct').jqGrid('setSelection', rowid);
+              //  calculateSummary(rowid);
+                calculateSummaryData();
+            },
+            loadError: function (jqXHR, textStatus, errorThrown) {
+                MessageRenderer.renderErrorText(jqXHR.responseText,'');
+            }
+        });
+    });
+
+    function deleteProduct(productId){
+        $('#jqgrid-grid-finishProduct').jqGrid('delRowData', productId);
+    }
+    function getSelectedPrimaryDemandOrderId() {
+        return $('#gFormNewPrimaryDemandOrder input[name = id]').val();
+    }
+    function executePreConditionPrimaryDemandOrder() {
+        // trim field vales before process.
+        trim_form();
+        if (!$("#gFormNewPrimaryDemandOrder").validationEngine('validate')) {
+            return false;
+        }
+       // $('#jqgrid-grid-finishProduct').jqGrid("editCell", 0, 0, false);
+        return true;
+    }
+    function executeAjaxNewPrimaryDemandOrder() {
+        if(!executePreConditionPrimaryDemandOrder()) {
+            return false;
+        }
+
+        if( $("#checkbutton").text() == 'N')
+        {
+            MessageRenderer.render({
+                messageTitle: 'Warning',
+                type: 2,
+                messageBody: 'Customer is not eligible to proceed.'
+            });
+            return false;
+        }
+
+        /*var data =  $("#gFormNewPrimaryDemandOrder").serializeArray();
+        var gd = $("#jqgrid-grid-finishProduct").jqGrid('getRowData');
+        var length = gd.length;
+        for (var i=0; i < length; ++i) {
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].finishProduct.id', 'value': gd[i].id});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].id', 'value': gd[i].primaryDemandOrderDetailsId});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].rate', 'value': gd[i].rate});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].primaryDemandOrder.id', 'value': $('#gFormNewPrimaryDemandOrder input[name = id]').val()});
+            data.push({'name':'items.primaryDemandOrderDetails['+i+'].quantity', 'value': gd[i].quantity});
+        }*/
+
+        var allData = {};
+
+        allData["customerId"] = $("#customerId").val();
+        allData["territorySubArea.id"] = $("#territorySubArea").val();
+        allData["distributionPoint.id"] = $("#distributionPoint").val();
+        allData["dateProposedDelivery"] = $("#dateProposedDelivery").val();
+
+       // var selectedProductIds = $('#jqgrid-grid-finishProduct').jqGrid('getGridParam', 'selarrrow');
+        var allRowsOnCurrentPage = $('#jqgrid-grid-finishProduct').jqGrid('getDataIDs');
+
+        var productIds = filterListOfIds(allRowsOnCurrentPage);
+        var total = 0;
+
+        var numberOfIds = 0;
+        for(var i = 0; i < productIds.length; i++){
+            var transferQty = $("#jqgrid-grid-finishProduct").getRowData(productIds[i]).transferQty;
+
+            if(transferQty > 0) {
+                numberOfIds += 1;
+
+                allData["products.product[" + i + "].productId"] = $("#jqgrid-grid-finishProduct").getRowData(productIds[i]).productId;
+                allData["products.product[" + i + "].unitPrice"] = $("#jqgrid-grid-finishProduct").getRowData(productIds[i]).price;
+                allData["products.product[" + i + "].transferQty"] = transferQty;
+                total += parseFloat(transferQty);
+            } /*else{
+                MessageRenderer.renderErrorText("Please Input Quantity");
+                return false;
+            }*/
+        }
+        if(numberOfIds == 0){
+            MessageRenderer.renderErrorText("Please enter quantity for at least one product from the list.");
+            return false;
+        }
+
+
+
+        SubmissionLoader.showTo();
+        jQuery.ajax({
+            type:'post',
+            data: allData,
+            url: "${request.contextPath}/${params.controller}/createNew",
+            success:function(data, textStatus) {
+                executePostConditionPrimaryDemandOrder(data);
+            },
+            error:function(XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    clean_form('#gFormNewPrimaryDemandOrder');
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                }
+                else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete:function(){
+                calculateSummaryData();
+                SubmissionLoader.hideFrom();
+            },
+            dataType:'json'
+        });
+        $("#checkbutton").text("");
+        return false;
+
+    }
+
+    function filterListOfIds(idsArray){
+        var ids = [];
+        $.each(idsArray, function(i, e) {
+            if ($.inArray(e, ids) == -1) ids.push(e);
+        });
+        ids = ids.filter(function(n){ return n != undefined });
+        return ids;
+    }
+    function executePostConditionPrimaryDemandOrder(result) {
+        if (result.type == 1) {
+//            $("#jqgrid-grid").trigger("reloadGrid");
+            clean_form('#gFormNewPrimaryDemandOrder');
+        }
+        MessageRenderer.render(result);
+    }
+
+    var CustomerInfo = {
+        customerCoreInfoId: null,
+        popupCustomerListPanel: function(){
+            var url = '${resource(dir:'primaryDemandOrder', file:'popupCustomerListPanel')}' ;
+            var params = {};
+            DocuAjax.html(url, params, function(html){
+                $.fancybox(html);
+            });
+        },
+        setCustomerInformation: function(customerCoreInfoId, customerCoreInfo){
+            $("#searchKey").val(customerCoreInfo);
+            $("#customerId").val(customerCoreInfoId);
+            CustomerInfo.customerCoreInfoId = customerCoreInfoId;
+            generateGeoSelectList(customerCoreInfoId);
+            internalEligibilityCheck(customerCoreInfoId);
+        //    getAllProductListBySubInventoryId(customerCoreInfoId)
+        },
+        popupProductListPanel: function(customerCoreInfoId){
+            var url = '${resource(dir:'primaryDemandOrder', file:'popupProductListPanel')}' ;
+            var params = {id: customerCoreInfoId,territorySubAreaId:$("#territorySubArea").val()};
+            DocuAjax.html(url, params, function(html){
+                $.fancybox(html);
+            });
+        },
+        setProductInformation: function(productInfoId, productInfo){
+            $("#searchProductKey").val(productInfo);
+            $("#productId").val(productInfoId);
+        }
+    };
+
+    function loadCustomerForPrimaryDemandOrder() {
+        jQuery('#searchKey').autocomplete({
+            minLength:'1',
+            source:function (request, response) {
+                //EmployeeRegister.employeeCoreInfoId = null;
+                var data = {searchKey: request.term};
+                var url = '${resource(dir:'primaryDemandOrder', file:'customerAutoCompleteForNewPrimaryDemandOrder')}';
+                DocuAutoComplete.setSpinnerSelector('searchKey').execute(response, url, data, function (item) {
+                    item['label'] = "[" + item['code'] + "] " + item['name'];
+                    item['value'] = item['label'];
+                    return item;
+                });
+            },
+            select:function (event, ui) {
+                CustomerInfo.setCustomerInformation(ui.item.id, ui.item.value);
+            //    generateGeoSelectList(ui.item.id);
+             //   getAllProductListBySubInventoryId(ui.item.id);
+              //  loadProduct(ui.item.id);
+                readCustomerBalanceAndShippingAddress(ui.item.id);
+                $("#customerId").val(ui.item.id);
+                $("#customerNumber").val(ui.item.code);
+                $("#customerName").val(ui.item.name);
+                $("#customerAddress").val(ui.item.present_address);
+                $('#searchProductKey').focus();
+            }
+        }).data("autocomplete")._renderItem = function (ul, item) {
+            var custometDetailts = "";
+            if (item) {
+                custometDetailts = '<div style="font-size: 9px; color:#326E93;">' +" Code: " +item.code+", Name: " + item.name + "-" + ", Status: " + item.status + "-" + ", Address: " + item.present_address + '</div>';
+            }
+            return $("<li></li>").data("item.autocomplete", item).append('<a>' + item['label'] + '</a>' + custometDetailts).appendTo(ul);
+        };
+    };
+
+    $('#search-btn-customer-register-id').click(function(){
+        CustomerInfo.popupCustomerListPanel();
+    });
+
+    function readCustomerBalanceAndShippingAddress(customerId) {
+        var options = '<option value=""></option>';
+        $("#advanceAmount").val("");
+        SubmissionLoader.showTo();
+        jQuery.ajax({
+            type:'post',
+            data: {customerId: customerId},
+            url: "${request.contextPath}/${params.controller}/readCustomerBalanceAndAddress",
+            success:function(data, textStatus) {
+                $("#advanceAmount").val(data.balance.toFixed(4));
+                if(data.isOwn == "false"){
+                    $('input:radio[name="shipTo"]').filter('[value="ShipAddress"]').attr('checked', true);
+                }else{
+                    $('input:radio[name="shipTo"]').filter('[value="Own"]').attr('checked', true);
+                }
+                var length  = data.addressList.length;
+                if(length > 0){
+                    for (var i = 0; i < length; i++) {
+                        options += '<option value="' + data.addressList[i].id + '">' + data.addressList[i].address + '</option>';
+                    }
+                }
+            },
+            error:function(XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                } else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete:function(){
+                $("#shippingAddress").html(options);
+                generateGeoSelectList(customerId);
+                SubmissionLoader.hideFrom();
+            },
+            dataType:'json'
+        });
+    }
+    function getAllProductListBySubInventoryId(customerId){
+        jQuery("#jqgrid-grid-finishProduct").clearGridData();
+        if(id){
+            var territorySubAreaId = $("#territorySubArea").val();
+//            SubmissionLoader.showTo();
+            jQuery.ajax({
+                type: 'post',
+                data: {customerId:customerId,territorySubAreaId: territorySubAreaId},
+                url: '${resource(dir:'primaryDemandOrder', file:'jsonProductList')}',
+                success: function (data, textStatus) {
+                    if(data[0]){
+                        jQuery("#jqgrid-grid-finishProduct")
+                                .jqGrid('setGridParam',
+                                {
+                                    datatype: 'local',
+                                    data: data
+                                })
+                                .trigger("reloadGrid");
+                    }else{
+                        jQuery("#jqgrid-grid-finishProduct").clearGridData();
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    if(XMLHttpRequest.status = 0){
+                        MessageRenderer.renderErrorText("Network Problem: Time out");
+                    } else{
+                        MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                    }
+                },
+                complete: function () {
+                    SubmissionLoader.hideFrom();
+                },
+                dataType: 'json'
+            });
+        }
+    }
+    function generateGeoSelectList(customerId){
+        SubmissionLoader.showTo();
+        jQuery.ajax({
+            type: 'post',
+            url: '${request.contextPath}/${params.controller}/getGeoLocationForCustomer?customerMasterId=' + customerId,
+            success: function (data, textStatus) {
+                $("#territorySubArea").empty();
+                $.each(data,function(key, value)
+                {
+                    $("#territorySubArea").append('<option value=' + value.id + '>' + value.geoLocation + '</option>');
+                });
+                if(data.length > 1){
+                    MessageRenderer.render({messageTitle:'Select Geo Location', type: 2, messageBody: 'Customer assigned to more than one geo location.'});
+                    $("#geoTr").show();
+                }
+            },
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                } else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete: function () {
+                getAllProductListBySubInventoryId(customerId);
+                SubmissionLoader.hideFrom();
+            },
+            dataType: 'json'
+        });
+
+    };
+
+    function loadProduct(customerId) {
+        $('#searchProductKey').blur(function () {
+            if ($('#searchProductKey').val() == '') {
+                $("#productId").val('');
+            }
+        });
+        jQuery('#searchProductKey').autocomplete({
+            minLength:'1',
+            source:function (request, response) {
+                var data = {searchKey:request.term};
+                var url = '${resource(dir:'secondaryDemandOrder', file:'listProduct')}?id=' + customerId + "&query=" + $('#searchProductKey').val();
+                DocuAutoComplete.setSpinnerSelector('searchProductKey').execute(response, url, data, function (item) {
+                    item['label'] = "[" + item['code'] + "] " + item['name'];
+                    item['value'] = item['label'];
+                    return item;
+                });
+            },
+            select:function (event, ui) {
+                CustomerInfo.setProductInformation(ui.item.id, ui.item.value);
+                $('#rate').val(ui.item.price);
+                $('#productCode').val(ui.item.code);
+                $('#productName').val(ui.item.name);
+                $('#quantity').focus();
+            }
+        }).data("autocomplete")._renderItem = function (ul, item) {
+            var accountstype = "";
+            if (item) {
+                accountstype = '<div style="font-size: 9px; color:#326E93;">' +" Code: " + item.code + ", Name: " + item.name + " Product Category: " + item.p_cat + ", Price: " + item.price + '</div>';
+            }
+            return $("<li></li>").data("item.autocomplete", item).append('<a>' + item['label'] + '</a>' + accountstype).appendTo(ul);
+        }
+    }
+
+    $('#search-btn-customer-product-id').click(function(){
+        CustomerInfo.popupProductListPanel($("#customerId").val());
+    });
+
+    function addFinishProductToGrid(){
+        var customerId = $("#customerId").val();
+
+        if(!customerId){
+            MessageRenderer.renderErrorText("Customer is not selected");
+            return
+        }
+        var productId = $("#productId").val();
+        if(!productId){
+            MessageRenderer.renderErrorText("ProductItem is not selected");
+            return
+        }
+
+        var totalQuantity = Number($("#quantity").val());
+        if(totalQuantity <= 0){
+            MessageRenderer.renderErrorText("Quantity is empty");
+            return
+        }
+        var productName = $("#productName").val();
+        var productCode = $("#productCode").val();
+        var unitPrice = Number($("#rate").val());
+        var amount = unitPrice * totalQuantity;
+
+        var rowTo = jqGridProductList.getRowData(productId.toString());
+//                $("#jqgrid-grid-saleItem").jqGrid('getRowData', productId.toString());
+//        $("#jqgrid-grid-finishProduct").jqGrid('setRowData', rowId, {delete: '<a  href="javascript:deleteProduct(' + rowId + ')" class="ui-icon ui-icon-trash" title="Delete"></a>'});
+        if (!rowTo.id) {
+            var newRowData = [
+                { 'id':productId.toString(), 'primaryDemandOrderDetailsId': '', 'productCode':productCode.toString(), 'productName':productName.toString(),
+                    'quantity':totalQuantity.toString(), 'rate':unitPrice.toString(), 'amount':amount.toString(), 'delete': '<a  href="javascript:deleteProduct(' + productId + ')" class="ui-icon ui-icon-trash" title="Delete"></a>'}
+            ];
+            jqGridProductList.addRowData(productId.toString(), newRowData);
+            $("#jqgrid-grid-finishProduct [id*='undefined']").attr('id', productId.toString());
+        }else{
+            rowTo.quantity = Number(rowTo.quantity) + totalQuantity;
+            rowTo.amount = Number(rowTo.amount) + amount;
+            $('#jqgrid-grid-finishProduct').jqGrid('setRowData', productId, rowTo);
+            MessageRenderer.renderErrorText("Product added on selected item");
+            calculateSummaryData();
+        }
+        clearProductItem();
+    }
+
+    /*function calculateSummary(rowid) {
+        $('#jqgrid-grid-finishProduct').jqGrid('setSelection', rowid);
+    }*/
+
+    function calculateSummaryData() {
+        var $grid = $('#jqgrid-grid-finishProduct');
+        var sumAmount = $grid.jqGrid('getCol', 'totalPrice', false, 'sum');
+        var qtyInLtrConvert = $grid.jqGrid('getCol', 'qtyInLtrConvert', false, 'sum');
+        $grid.jqGrid('footerData', 'set', { 'totalPrice': sumAmount });
+        $grid.jqGrid('footerData', 'set', { 'qtyInLtrConvert': qtyInLtrConvert });
+        $grid.jqGrid('footerData', 'set', { 'productName': 'Total'});
+
+        var advanceAmount = Number($("#advanceAmount").val());
+       /* $("#receivableAmount").val(sumAmount - advanceAmount);
+        var orderValue= Number($("#receivableAmount").val());
+        var customerRecivable= Number($("#totalamount").val()) ;
+        */
+
+        var orderValue= Number($("#receivableAmount").val());
+        var customerRecivable= Number($("#totalamount").val()) ;
+        $("#receivableAmount").val(sumAmount + orderValue);
+        var customerSecurityDeposit=  Number($("#customerDeposit").val());
+        var limit= Number($("#customerLimit").val());
+
+        if(sumAmount == 0){
+            $("#checkbutton").text("");
+        }
+       else if((orderValue+customerRecivable)-customerSecurityDeposit <= limit){
+            $("#checkbutton").text("Y");
+        }
+        else{
+            $("#checkbutton").text("N");
+        }
+    }
+
+    function clearProductItem(){
+        $("#productId").val('');
+        $("#productName").val('');
+        $("#productCode").val('');
+        $("#rate").val('');
+        $("#quantity").val('');
+        $('#searchProductKey').val('');
+    }
+
+    function clean_form(formName) {
+        var searchKey = $("#searchKey").val();
+        var customerId = $("#customerId").val();
+        var customerNumber = $("#customerNumber").val();
+        var customerName = $("#customerName").val();
+        var customerAddress = $("#customerAddress").val();
+        var receivableAmount = $("#receivableAmount").val();
+        var advanceAmount = $("#advanceAmount").val();
+        var eligibility = $("#eligibility").val();
+
+        $(formName).find(":input").not(":button, :submit, :reset, :checkbox, :radio").each(function () {
+            if (this.type == 'hidden') {
+                this.value = "";
+            } else {
+                this.value = "";
+            }
+        });
+
+        $("#searchKey").val(searchKey);
+        $("#customerId").val(customerId);
+        $("#customerNumber").val(customerNumber);
+        $("#customerName").val(customerName);
+        $("#customerAddress").val(customerAddress);
+        $("#receivableAmount").val(receivableAmount);
+        $("#advanceAmount").val(advanceAmount);
+        $("#eligibility").val(eligibility);
+
+        $(formName + ' input[name = create-button]').attr('value', 'Create');
+        $("#jqgrid-grid-finishProduct").jqGrid('clearGridData');
+    }
+
+    function internalEligibilityCheck(customerId){
+        jQuery.ajax({
+            type: 'post',
+            url: '${resource(dir:'primaryDemandOrder', file:'loadDataEligibilitycheck')}?customerId=' + customerId,
+            success: function (data, textStatus) {
+                $("#totalamount").val(data[0].receivable);
+                $("#customerLimit").val(data[0].customer_credit_limit);
+                $("#customerPriority").val(data[0].priority);
+                $("#customerDeposit").val(data[0].deposit);
+                $("#advanceAmount").val(data[0].deposit);
+                $("#receivableAmount").val(data[0].receivable);
+
+            },
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                } else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete: function () {
+            },
+            dataType: 'json'
+        });
+
+    }
+
+    function popupEligibility() {
+        var id = $("#orderRowid").val();
+        var data = jQuery('#customer-order-grid').jqGrid('getRowData', id);
+        var orderValue = $("#receivableAmount").val();
+        var customerRecivable = $("#totalamount").val() ;
+        var customerSecurityDeposit = $("#customerDeposit").val();
+        var limit = $("#customerLimit").val();
+        var priority = $("#customerPriority").val();
+
+        var url = '${resource(dir:'primaryDemandOrder', file:'newpopUpEligibility')}';
+        var params = {orderValue: orderValue ,customerRecivable: customerRecivable, customerSecurityDeposit: customerSecurityDeposit ,limit: limit, priority:priority,text: $("#checkbutton").text()};
+        DocuAjax.html(url, params, function (html) {
+            $.fancybox(html);
+        });
+
+    }
+</script>

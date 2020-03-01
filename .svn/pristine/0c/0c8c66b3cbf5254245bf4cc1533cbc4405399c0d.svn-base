@@ -1,0 +1,289 @@
+<script type="text/javascript">
+    var allElements = new Array();
+    var elementIndex = 0;
+    var lastSel = -1;
+    var qtyText = '';
+    function checkForValue(elem) {
+        if (!elem) {
+            return [false, "Please enter marks."];
+        }
+        else {
+            return [true, ""];
+        }
+    }
+    function showCustomerName() {
+        var url = '';
+        var orderId = $('#orderId').val();
+        if (orderId) {
+            url = '${resource(dir:'processDemandOrder', file:'showCustomerName')}?orderId=' + orderId;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            datatype: 'json',
+            success: function (data) {
+                $("#customerName").val(data)
+            },
+            complete: function () {
+            }
+        });
+    }
+    var updateOrderEditor = {
+        onEnterKeyPressToGridCell: function () {
+            var callback = {
+                type: 'keydown',
+                fn: function (e) {
+                    var key = e.charCode || e.keyCode;
+
+                    if (key == 9) {
+                        if (this.name == allElements[allElements.length - 1].name) {
+                            e.preventDefault();
+                            jQuery('#jqgrid-grid-update-order').restoreRow(lastSel);
+                            updateOrderEditor.editGridCell(lastSel)
+
+                        }
+                    }
+                    else if (key == 13) {
+                        jQuery('#jqgrid-grid-update-order').restoreRow(lastSel);
+                        updateOrderEditor.editGridCell(lastSel)
+
+                    }
+                }
+            };
+
+            return callback;
+        },
+
+        editGridCell: function (rowid) {
+
+            var qty = qtyText.value
+            if (qty && rowid) {
+                if (isNaN(qty)) {
+                    var msg = {
+                        "class": "com.docu.common.Message",
+                        "messageBody": ["Please enter number as quantity"],
+                        "messageTitle": "Message",
+                        "type": 0
+                    }
+                    MessageRenderer.render(msg);
+                }
+                else {
+                    $.ajax({
+                        type: "POST",
+                        url: "${resource(dir:'processDemandOrder', file:'demandOrderDetailsUpdate')}?id=" + rowid + "&qty=" + qty,
+                        datatype: 'json',
+                        beforeSend: function (jqXHR, settings) {
+                            $("#loader_icon").show();
+                        },
+                        success: function (data) {
+                            $("#jqgrid-grid-update-order").jqGrid('setCell', (rowid), 'qty', qty);
+
+                            $("#jqgrid-grid-update-order").setGridParam({
+                                url: '${resource(dir:'processDemandOrder', file:'updateDemandOrderDetails')}?id=' + $('#orderId').val()
+                            });
+//                            setInterval(calculateTotal(),1000);
+                            $("#jqgrid-grid-update-order").trigger("reloadGrid");
+                            checkItemQuantity();
+                            MessageRenderer.render(data);
+                        },
+                        complete: function () {
+//                            $("#loader_icon").hide();
+                        }
+                    });
+                }
+            }
+            else {
+                var msg = {
+                    "class": "com.docu.common.Message",
+                    "messageBody": ["Please enter quantity"],
+                    "messageTitle": "Message",
+                    "type": 0
+                }
+                MessageRenderer.render(msg);
+            }
+        }
+    }
+    $(document).ready(function () {
+        var actionUrl = ''
+        showCustomerName();
+        if ($('#orderId').val()) {
+            actionUrl = '${resource(dir:'processDemandOrder', file:'updateDemandOrderDetails')}?id=' + $('#orderId').val()
+        }
+        $("#jqgrid-grid-update-order").jqGrid({
+            url: actionUrl,
+            datatype: "json",
+            colNames: [
+                'SL',
+                'id',
+                'pid',
+                'Product Name',
+                'Product ID',
+                'Quantity',
+//                'Quantity litre',
+                'Rate',
+                'Amount',
+                'total Amount'
+            ],
+            colModel: [
+                {name: 'sl', index: 'sl', width: 30},
+                {name: 'id', index: 'id', width: 30, hidden: true},
+                {name: 'product_id', index: 'product_id', width: 30, hidden: true},
+                {name: 'name', index: 'name', width: 200},
+                {name: 'pid', index: 'pid', width: 200},
+                {
+                    name: 'qty',
+                    index: 'qty',
+                    width: 100,
+                    align: 'center',
+                    editable: true,
+                    edittype: 'text',
+                    resizable: true,
+                    editoptions: {
+                        dataInit: function (elem) {
+                            qtyText = elem;
+                            $(elem).focus(function () {
+                                this.select();
+                            })
+                        }, dataEvents: [updateOrderEditor.onEnterKeyPressToGridCell()]
+                    },
+                    editrules: {custom: true, custom_func: checkForValue}
+                },
+//                {name: 'qtyInLtr', index: 'qtyInLtr', width: 100, align: 'right',hidden: true},
+                {
+                    name: 'rate',
+                    index: 'rate',
+                    width: 100,
+                    align: 'right',
+                    sorttype: 'number',
+                    formatter: "number",
+                    formatoptions: {decimalSeparator: ".", thousandsSeparator: ",", decimalPlaces: 2}
+                },
+
+                {
+                    name: 'amount',
+                    index: 'amount',
+                    width: 150,
+                    align: 'right',
+                    sorttype: 'number',
+                    formatter: "number",
+                    formatoptions: {decimalSeparator: ".", thousandsSeparator: ",", decimalPlaces: 2}
+                },
+                {
+                    name: 'total_amount',
+                    index: 'total_amount',
+                    width: 100,
+                    hidden: true,
+                    sorttype: 'number',
+                    formatter: "number",
+                    formatoptions: {decimalSeparator: ".", thousandsSeparator: ",", decimalPlaces: 2}
+                }
+
+            ],
+            rowNum: -1,
+            pager: '#jqgrid-update-order-pager',
+            rowList: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, -1],
+            sortname: 'id',
+            viewrecords: true,
+            sortorder: "desc",
+            caption: "Product Information",
+            autowidth: true,
+            height: 200,
+            scrollOffset: 0,
+            footerrow: true,
+            userDataOnFooter: true,
+//            userDataOnFooter : true,
+            loadComplete: function () {
+                var $grid = $('#jqgrid-grid-update-order');
+                var colSum = $grid.jqGrid('getCol', 'amount', false, 'sum');
+                $grid.jqGrid('footerData', 'set', {'amount': colSum, 'name': 'Total Amount'});
+//                var ids = $("#jqgrid-grid").jqGrid('getDataIDs');
+//                for (key in ids) {
+//                    var rowData = $("#jqgrid-grid").getRowData(ids[key]);
+//                    $("#jqgrid-grid").jqGrid('setRowData', ids[key], {checkOrder: '<input type="checkbox"  onchange="buttonStatusChange();"  class="orderChk" value="' + ids[key] + '" />'});
+//                }
+//                var $footRow = $('#jqgrid-grid-update-order').closest(".ui-jqgrid-bdiv").next(".ui-jqgrid-sdiv").find(".footrow");
+//
+//               var $g_sl = $footRow.find('>td[aria-describedby="jqgrid-grid-update-order_sl"]'),
+//                  $g_name = $footRow.find('>td[aria-describedby="jqgrid-grid-update-order_name"]'),
+//                  $g_pid = $footRow.find('>td[aria-describedby="jqgrid-grid-update-order_pid"]'),
+//                  $g_qty = $footRow.find('>td[aria-describedby="jqgrid-grid-update-order_qty"]'),
+//                  $g_rate = $footRow.find('>td[aria-describedby="jqgrid-grid-update-order_rate"]'),
+//               width4 = $g_sl.width() + $g_name.outerWidth() + $g_pid.outerWidth() + $g_qty.outerWidth() + $g_rate.outerWidth();
+//                $g_sl.css("display", "none");
+//                $g_name.css("display", "none");
+//                $g_pid.css("display", "none");
+//                $g_qty.css("display", "none");
+//                $g_rate.attr("colspan", "5").width(width4);
+//                $g_rate.css("text-align","right");
+
+            },
+            onSelectRow: function (rowid, status) {
+                elementIndex = 0;
+                allElements = new Array();
+                if (rowid && rowid !== lastSel) {
+
+                    jQuery('#jqgrid-grid-update-order').restoreRow(lastSel);
+                    $("#jqgrid-grid-update-order").editRow(rowid, true, false, false, false, false);
+                    lastSel = rowid;
+                }
+                if (rowid == lastSel) {
+                    jQuery("#jqgrid-grid-update-order").jqGrid('editRow', rowid, true);
+                    lastSel = rowid;
+
+                }
+            }
+        });
+
+    });
+    function setPriceValue() {
+        if ($('#pId').val()) {
+            var priceValue = ($('#pId').val().split('-'))
+            $('#productId').val(priceValue[0])
+            $('#rate').val(priceValue[1])
+        }
+    }
+
+    function addPrimaryDemandOrderDetails() {
+        if ($('#productId').val() && $('#rate').val() && $('#qty').val()) {
+            var qnty;
+            var url = "${resource(dir:'processDemandOrder', file:'createPrimaryDemandOrderDetails')}?primaryDemandOrder.id=" + ${params?.id} +"&finishProduct.id=" + $('#productId').val() + "&rate=" + $('#rate').val() + "&quantity=" + $('#qty').val();
+            var myGrid = $("#jqgrid-grid-update-order");
+            var dataGridIds = myGrid.jqGrid('getDataIDs');
+            for (var i = 0; i < dataGridIds.length; i++) {
+                var rowTo = myGrid.jqGrid('getRowData', dataGridIds[i])
+                if (rowTo['product_id'] == $('#productId').val()) {
+                    qnty = parseFloat(rowTo['qty']);
+                    qnty += parseFloat($('#qty').val());
+                    url = "${resource(dir:'processDemandOrder', file:'demandOrderDetailsUpdate')}?id=" + dataGridIds[i].toString() + "&qty=" + qnty;
+                    break;
+                }
+            }
+            $.ajax({
+                type: "POST",
+                url: url,
+                datatype: 'json',
+                beforeSend: function (jqXHR, settings) {
+                    $("#loader_icon").show();
+                },
+                success: function (data) {
+                    $("#jqgrid-grid-update-order").setGridParam({
+                        url: '${resource(dir:'processDemandOrder', file:'updateDemandOrderDetails')}?id=' + $('#orderId').val()
+                    });
+                    $("#jqgrid-grid-update-order").trigger("reloadGrid");
+                    checkItemQuantity();
+                    MessageRenderer.render(data);
+                },
+                complete: function () {
+//                            $("#loader_icon").hide();
+                }
+            });
+        }
+
+    }
+    function calculateTotal() {
+        var $grid = $('#jqgrid-grid-update-order');
+        var colSum = $grid.jqGrid('getCol', 'amount', false, 'sum');
+        $grid.jqGrid('footerData', 'set', {'amount': colSum, rate: 'Total Amount'});
+    }
+</script>

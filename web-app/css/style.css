@@ -1,0 +1,125 @@
+@charset "utf-8";
+/* CSS Document */
+
+.tabContainer{
+    float: left;
+    width: 800px;
+    font-family: arial;
+    font-size: 12px;
+}
+.main_tab_ul, .tab_ul{
+    float: left;
+    width: 790px;
+    padding: 0 5px;
+    margin: 0;
+}
+.main_tab_ul li, .tab_ul li{
+    float: left;
+    list-style: none;
+    background:#ececec url("../images/tab_bg_nor.png") top left repeat-x;
+    padding: 2px 5px;
+    -moz-border-radius-topleft: 5px;
+    -moz-border-radius-topright: 5px;
+    -webkit-border-radius-topleft: 5px;
+    -webkit-bordre-radius-topright:5px;
+    border-radius-topleft: 5px;
+    bordre-radius-topright:5px;
+    border: 1px solid #939393;
+    font-weight: bold;
+
+}
+.main_tab_ul li:hover, .tab_ul li:hover{
+    background: #ececec url("../images/tab_bg_hov.png") top left repeat-x;
+}
+.main_tab_ul li.active, .tab_ul li.active{
+    background: #FFFFFF;
+    border-bottom: 1px solid #FFFFFF;
+}
+.main_tab_ul li a, .tab_ul li a{
+    float: left;
+    color: #5e5d5d;
+    text-decoration: none;
+    padding: 2px 14px 2px 2px;
+}
+.main_tab_ul li a:hover, .tab_ul li a:hover, .main_tab_ul li.active a, .tab_ul li.active a{
+    color: #000000;
+}
+.select_user_container{
+    float: left;
+    clear: both;
+    width: 790px;
+    padding: 5px;
+    background: #a4bbdd;
+    border-bottom: 1px solid #26647D;
+}
+.select_user_container label{
+    padding: 0 5px;
+}
+.select_user_container select{
+    -moz-border-radius: 3px;
+    border: none;
+}
+.yearContainer{
+    float: left;
+    clear: both;
+    width: 790px;
+    padding: 5px;
+    text-align: center;
+    background: url("../images/year_bg.png") center center repeat-x;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+.textYear{
+    margin: 0 auto;
+    display: table;
+}
+.yearContainer a{
+    text-decoration: none;
+    color: #FFFFFF;
+}
+.tabContainer{
+    float: left;
+    clear: both;
+}
+.tab_ul{
+    margin-top: 5px;
+    background: url("../images/border_gray.png") bottom left repeat-x;
+}
+.tabContent{
+    float: left;
+    clear: both;
+    width: 790px;
+    padding: 5px;
+}
+tr.odd td{
+    background: #F1F1F1;
+}
+tr.even td{
+    background: #EBEBEB;
+}
+tr.odd td, tr.even td{
+    width: 15px;
+    padding: 2px;
+    border: 1px solid #D9D4D4;
+}
+tr.odd td div, tr.even td div{
+    float: left;
+    clear: both;
+    width: 15px;
+    height: 15px;
+    /*border: 1px solid #ccc;*/
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    /*display: table;*/
+}
+tr.odd td.name, tr.even td.name{
+    border: none;
+    width: 250px;
+}
+tr.odd td.present div, tr.even td.present div{
+    background: #ADD386;
+}
+tr.odd td.absent div, tr.even td.absent div{
+    background: #DE9292;
+}

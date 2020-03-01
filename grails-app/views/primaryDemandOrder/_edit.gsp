@@ -1,0 +1,211 @@
+<%@ page import="com.bits.bdfp.inventory.demandorder.PrimaryDemandOrder" %>
+<form name='gFormEditPrimaryDemandOrder' id='gFormEditPrimaryDemandOrder'>
+    <g:hiddenField name="id" value="${primaryDemandOrder?.id}"/>
+    <g:hiddenField name="version" value="${primaryDemandOrder?.version}"/>
+    <g:hiddenField name="idEnterprise" id="idEnterprise" value=""/>
+    <g:hiddenField name="idBusiness" id="idBusiness" value=""/>
+    <g:hiddenField name="customerOrderFor.id" id="customerMaster"/>
+    <div id="remote-content-territoryConfiguration"></div>
+
+    <br>
+
+    <div class="element_row_content_container lightColorbg pad_bot0">
+        <table>
+            <tr class="element_row_content_container lightColorbg pad_bot0">
+                <td>
+                    <label for="distributionPoint" class="txtright bold hight1x width160">
+                        Order No
+                    </label>
+                </td>
+                <td>
+                    <g:textField name="orderNo" readonly="readonly" class="width160" value="${primaryDemandOrder?.orderNo}"/>
+                </td>
+                <td>
+                    <label for="orderDate" class="txtright bold hight1x width160">Order Date</label>
+                </td>
+                <td>
+                    <g:textField class="width160" name="orderDate" id="orderDate" value="${orderDate}" readonly="readonly"/>
+                </td>
+            </tr>
+            <tr class="element_row_content_container lightColorbg pad_bot0">
+                <td>
+                    <label for="totalOrderValue" class="txtright bold hight1x width160">Total Order Value</label>
+                </td>
+                <td>
+                    <g:textField class="width160" name="totalOrderValue" value="" readonly="readonly"/>
+                </td>
+                <td>
+                    <label for="distributionPoint" class="txtright bold hight1x width160">
+                        Distribution Point
+                        <span class="mendatory_field">*</span>
+                    </label>
+                </td>
+                <td>
+                    <g:select name="distributionPoint.id"
+                              from="${distributionPointList}"
+                              class="validate[required]"
+                              id="distributionPoint"
+                              style="width: 165px; height: 20px;"
+                              optionKey="id" optionValue="name" value="${primaryDemandOrder?.distributionPoint.id}"
+                              noSelection="['null': 'Please Select']" onchange="fetchCustomer(this.value);"/>
+                    <script type="text/javascript">
+                        $(document).ready(function () {
+                            var distributionPointId = $("#distributionPoint").val();
+                            fetchCustomer(distributionPointId);
+                            $('#searchProductKey').blur(function () {
+                                if ($('#searchProductKey').val() == '') {
+                                    $("#productId").val('');
+                                }
+                            });
+                            if(distributionPointId){
+                                $("#distributionPoint").attr("disabled", true);
+                            }
+                        });
+                        $('#search-btn-customer-product-id').click(function () {
+//        CustomerInfo.popupProductListPanel($("#customerId").val());
+                            var url = '${resource(dir:'secondaryDemandOrder', file:'popupProductListPanel')}';
+                            var params = {customerId: $("#customerMaster").val()};
+                            DocuAjax.html(url, params, function (html) {
+                                $.fancybox(html);
+                            });
+                        });
+                    </script>
+                </td>
+            </tr>
+            <tr class="element_row_content_container lightColorbg pad_bot0">
+                <td>
+                    <label for="dateProposedDelivery" class="txtright bold hight1x width160">
+                           <g:message
+                            code="primaryDemandOrder.dateProposedDelivery.label"
+                            default="Date Proposed Delivery"/>
+                        <span class="mendatory_field">*</span>
+                    </label>
+                </td>
+                <td>
+                    <g:textField name="dateProposedDelivery" id="dateProposedDelivery" class="validate[required] width160"
+                                 value="${dateProposedDelivery}"
+                                 onchange='populateCustomerOrderGrid();'/>
+                </td>
+                <td>
+                    <label for="dateExpectedDeliver" class="txtright bold hight1x width160">
+                           <g:message code="primaryDemandOrder.dateExpectedDeliver.label" default="Date Expected Deliver"/>
+                        <span class="mendatory_field">*</span>
+                    </label>
+                </td>
+                <td>
+                    <g:textField name="dateExpectedDeliver" id="dateExpectedDeliver" class="validate[required] width160"
+                                 value="${dateExpectedDeliver}"/>
+                </td>
+            </tr>
+        </table>
+
+        <div>
+            <table>
+                <tr class="element_row_content_container lightColorbg pad_bot0">
+                    <td>
+                        <label for="userOrderPlaced" class="txtright bold hight1x width160">
+                            <g:message code="primaryDemandOrder.userOrderPlaced.label" default="Customer Name"/></label>
+                    </td>
+                    <td>
+                        <g:textField class="width160" name="customerMaster.name"
+                                     id="customerMasterName"
+                                     value="" readonly="readonly"/>
+                    </td>
+                    <td>
+                        <label for="userOrderPlaced" class="txtright bold hight1x width160"><g:message
+                                code="primaryDemandOrder.userOrderPlaced.label"
+                                default="Customer Code"/></label>
+                    </td>
+                    <td>
+                        <g:textField class="width160" name="customerMaster.code"
+                                     id="customerMasterCode"
+                                     value="" readonly="readonly"/>
+                    </td>
+                </tr>
+                <tr class="element_row_content_container lightColorbg pad_bot0">
+                    <td>
+                        <label class="txtright bold hight1x width160">
+                            Product
+                        </label>
+
+                    </td>
+                    <td><input type="text" id="searchProductKey" name="searchProductKey" class="width500"/>
+                        <input type="hidden" id="productId" name="finishProduct.id"/>
+                        <input type="hidden" id="productCode" value="" />
+                        <input type="hidden" id="product" value=""/>
+                        <span id="search-btn-customer-product-id" title="" role="button"
+                              class="fld-btn ui-button ui-widget ui-state-default ui-corner-all ui-button-icon-only floatR">
+                            <span class="ui-button-icon-primary ui-icon ui-icon-search"></span>
+                            <span class="ui-button-text"></span>
+                        </span>
+                    </td>
+                    %{--<td>--}%
+                        %{--<label for="userOrderPlaced" class="txtright bold hight1x width1x"--}%
+                               %{--style="width: 160px;"><g:message--}%
+                                %{--code="primaryDemandOrder.userOrderPlaced.label"--}%
+                                %{--default="Product"/></label>--}%
+                    %{--</td>--}%
+                    %{--<td>--}%
+                        %{--<g:select name="finishProduct.id" from="${com.bits.bdfp.inventory.product.FinishProduct.list()}"--}%
+                                  %{--style="width: 165px; height: 20px;" id="finishProduct"--}%
+                                  %{--optionKey="id" value="" noSelection="['null': 'Please Select']"--}%
+                                  %{--optionValue="name"--}%
+                                  %{--onchange="storeSelectedId();"/>--}%
+                    %{--</td>--}%
+                    </tr>
+                <tr class="element_row_content_container lightColorbg pad_bot0">
+                    <td>
+                        <label class="txtright bold hight1x width160">
+                            <g:message code="secondaryDemandOrder.rate.label" default="Rate"/>
+                        </label>
+
+                    </td>
+                    <td><g:textField class="width160" name="rate" id="rate" value="" readonly="readonly"/></td>
+                    <td>
+                        <label for="distributionPoint" class="txtright bold hight1x width160">
+                            <g:message code="primaryDemandOrder.distributionPoint.label" default="Quantity"/></label>
+                    </td>
+                    <td>
+                        <g:textField class="amount width160" name="quantity" id="quantity" value=""/>
+                    </td>
+                    <td>
+                        <span class="button"><input type="button" name="add-button" id="add-button"
+                                                    class="ui-button ui-widget ui-state-default ui-corner-all"
+                                                    value="Add"
+                                                    onclick="addNewItemToCollectionGrid();"/></span>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="buttons">
+
+                <span id="remove-span" class="button" hidden="hidden"><input type='button' name="remove-button"
+                                                                             id="remove-button"
+                                                                             class="ui-button ui-widget ui-state-default ui-corner-all"
+                                                                             value='Delete'
+                                                                             onclick="deleteItemFromGrid();"/></span>
+                <span class="button"><input type="button" name="cancel-button" id="refresh-button"
+                                            class="ui-button ui-widget ui-state-default ui-corner-all"
+                                            onclick="resetAdderDiv();" value="Cancel"/></span>
+            </div>
+        </div>
+
+        <br/>
+
+        <table id="primary-order-details-grid"></table>
+
+        <div id="details-pager"></div>
+    </div>
+
+    <div class="buttons" id="orderCreateDiv" style="padding-top: 865px;">
+        <span class="button"><input type="button" name="create-button" id="create-button"
+                                    class="ui-button ui-widget ui-state-default ui-corner-all"
+                                    value="Update"
+                                    onclick="updatePrimaryDemandOrder();"/></span>
+        %{--<span class="button"><input type="button" name="delete-button" id="delete-button"--}%
+        %{--class="ui-button ui-widget ui-state-default ui-corner-all"--}%
+        %{--value="Delete"--}%
+        %{--onclick="deletePrimaryDemandOrder();"/></span>--}%
+    </div>
+
+</form>

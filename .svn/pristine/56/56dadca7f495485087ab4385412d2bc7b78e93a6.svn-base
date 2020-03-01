@@ -1,0 +1,224 @@
+package com.bits.bdfp.util
+
+import java.text.SimpleDateFormat
+
+
+public final class ApplicationConstants {
+
+    public static final long SALES_DEPARTMENT_ID = 1
+    public static final long EMPLOYEE_MASTER_TYPE_ID = 1
+    public static final long CUSTOMER_MASTER_TYPE_ID = 2
+    public static final long PRODUCT_PRICING_TYPE_STANDARD_ID = 1
+    public static final long PRODUCT_PRICING_TYPE_NEGOTIATED_ID = 2
+    public static final long PRICING_CATEGORY_DP_ID = 1
+    public static final long PRICING_CATEGORY_TP_ID = 2
+    public static final long PRICING_CATEGORY_NEGOTIATED_ID = 4
+    public static final long CUSTOMER_CATEGORY_BRANCH_ID = 1   // Branch
+    public static final long CUSTOMER_CATEGORY_DEALER_ID = 2   //Dealer
+    public static final long CUSTOMER_CATEGORY_SALES_MAN_ID = 3   // Sales Man
+    public static final long CUSTOMER_CATEGORY_DIRECT_ID = 7 // POS Customer
+    public static final long CUSTOMER_CATEGORY_RETAIL_ID = 8 // Retail Customer
+    public static final long DP_PARTNER_ID = 1 // DP Partner
+    public static final long SALABLE_TYPE_INVENTORY_ID = 1
+    public static final long MARKET_RETURN_TYPE_INVENTORY_ID = 2
+    public static final long DAMAGE_TYPE_INVENTORY_ID = 3
+    public static final long BONUS_TYPE_INVENTORY_ID = 4
+    public static final long APPLICATION_USER_LENGTH = 7
+    public static final int USER_MAX_LOGIN_FAIL = 3
+    public static final String CUSTOMER_KEY = "CUSTOMER_KEY"
+    public static final long USER_TYPE_SUPER_ADMIN = 1
+    public static final long USER_TYPE_ADMIN = 2
+    public static final long USER_TYPE_CUSTOMER = 3
+    public static final long USER_TYPE_OTHER = 4
+    public static final long CUSTOMER_PAYMENT_TYPE_CASH_ID = 1 // Cash
+    public static final long CUSTOMER_PAYMENT_TYPE_CREDIT_ID = 2 // Credit
+    public static final boolean loanAccountTransactionUpdate = true
+    public static final boolean loanProvisionChange = true
+    public static final boolean rawSqlGeneration = true
+    public static final boolean LOAN_STATUS_CHANGE_AT_MONTH_END = true
+    public static final boolean SINGLE_INSTALLMENT_COLLECTION_ONLY = false
+
+    public static final long LOAN_PROVISION_PROCESS = 1 // 1 -> Current Provision Process, 2 -> Daily Interest Accrual Process
+    public static final long LOAN_PROVISION_PROCESS_CURRENT = 1
+    public static final long LOAN_PROVISION_PROCESS_DAILY_INTEREST_ACCRUAL = 2
+
+    public static final String TICK_MARK_STRING = "<font style='font-weight: bold;color: green;'>[&radic;]</font>";
+    public static final String CROSS_STRING = "<font style='font-weight: bold;color: red;'>[X]</font>";
+
+    //Application name
+    public static final String APP_NAME = "bdfp"
+    /** Opposite of  {@link #FAILS} .               */
+    public static final boolean PASSES = true;
+    /** Opposite of  {@link #PASSES} .               */
+    public static final boolean FAILS = false;
+
+    /** Opposite of  {@link #FAILURE} .                  */
+    public static final boolean SUCCESS = true;
+    /** Opposite of  {@link #SUCCESS} .                  */
+    public static final boolean FAILURE = false;
+
+    public static final String WELCOME = "Welcome"
+
+    public static final String GRAILS_DOMAIN = "Domain"
+    public static final String GRAILS_CONTROLLER = "Controller"
+    public static final String APPLICATION_PACKAGE = "com.docu."
+    public static final String NO_COLLECTION_DCR = "No Collection DCR"
+
+    public static final String DEFAULT_LEFT_MENU = "MF"
+    public static final String DEFAULT_CONTROLLER = "authorization"
+    public static final String DEFAULT_ACTION = "dashboard"
+
+    /**
+     Useful for  {@link String}  operations, which return an index of <tt>-1</tt> when
+     an item is not found.
+     */
+    public static final int NOT_FOUND = -1;
+
+    /** System property - <tt>line.separator</tt>                */
+    public static final String NEW_LINE = System.getProperty("line.separator");
+    /** System property - <tt>file.separator</tt>                */
+    public static final String FILE_SEPARATOR = System.getProperty("file.separator");
+    /** System property - <tt>path.separator</tt>                */
+    public static final String PATH_SEPARATOR = System.getProperty("path.separator");
+    public static final String XML_FILE_EXTENSION = "xml"
+    public static final String ZIP_FILE_EXTENSION = "zip"
+
+    public static final String EMPTY_STRING = "";
+    public static final String SPACE = " ";
+    public static final String TAB = "\t";
+    public static final String SINGLE_QUOTE = "'";
+    public static final String PERIOD = ".";
+    public static final String DOUBLE_QUOTE = "\"";
+    public static final String COLON = ":";
+    public static final String COMMA = ",";
+    public static final String SEME_COLON = ";";
+    public static final String EQUALS = "=";
+    public static final String UNDER_SCORE = "_"
+    public static final String ESCAPE_SINGLE_QUOTE = "\\\\'";
+    public static final String ESCAPE_SINGLE_QUOTE_FOR_JAVA = "\'";
+    public static final String FIRST_BRACKET_OPEN = "("
+    public static final String FIRST_BRACKET_CLOSE = ")"
+    public static final String SQL_SCRIPT_FIELD_SEPARATOR = "->"
+
+    // BEGIN :: Report Related File Path
+    public static final String BRAC_LOGO_IMAGE_PATH = "reports/companyLogo/brac_logo.jpg"
+    public static final String NO_IMAGE = "images/img_no_image.jpg"
+    public static final String REPORT_DOWNLOAD_DEFAULT_FORMAT_PDF = "PDF"
+    public static final String REPORT_DOWNLOAD_DEFAULT_FORMAT_MSEXCEL = "XLS"
+
+    public static final int REPORT_FORMAT_PDF_ID = 1
+    public static final int REPORT_FORMAT_MSEXCEL_ID = 2
+
+    public static final String  VOUCHER_POSTING_TYPE_ALL = "ALL"
+
+     public static final String DEFAULT_CONTACT_NO = "+8801711555111"
+     public static final String REPORT_NO_LOGO_IMAGE_PATH = "images/report_no_logo.jpg"
+    // END :: Report Related File Path
+
+    //algebraic signs
+    public static final int POSITIVE = 1;
+    public static final int NEGATIVE = -1;
+    public static final String PLUS_SIGN = "+";
+    public static final String NEGATIVE_SIGN = "-";
+
+    //Date format
+    public static final String DATE_FORMAT = "dd-MM-yyyy"
+    public static final String DATE_FORMAT_DB = "%d-%m-%Y"
+    public static final String DATE_TIME_FORMAT_DB = "%d-%m-%Y %h:%i:%s %p"
+    public static final String DATE_FORMAT_Y_M_D = "yyyy-MM-dd"
+    public static final String DATE_FORMAT_Y_M = "yyyy-MM"
+    public static final String DATE_FORMAT_YYYY = "yyyy"
+    public static final String JQUERY_UI_DATE_FORMAT = "dd-mm-yy"
+    public static final Date DATE_NOW=new Date()
+    public static final Date DATE_NEXT=new Date()+1
+    public static final  SimpleDateFormat FORMAT_DATE = new SimpleDateFormat ("dd-MM-yyyy")
+    public static final String DATE_FORMAT_CURRENT=FORMAT_DATE.format(DATE_NOW)
+    public static final String DATE_FORMAT_NEXT=FORMAT_DATE.format(DATE_NEXT)
+
+    //Date mask
+    public static final String DATE_MASK_FORMAT = "99-99-9999"
+    public static final String DATE_MM_YYYY_FORMAT = "99-9999"
+    //Time mask
+    public static final String TIME_MASK_FORMAT = "99:99 aa" //"99:99:LL"
+    // date mask with yyyy-mm-dd format
+    public static final String DATE_MASK_FORMAT_Y_M_D = "9999-99-99"
+
+    // year mask format
+    public static final String YEAR_MASK_FORMAT = "9999"
+    public static final int MILLISECONDS_IN_DAY = 1000 * 60 * 60 * 24;
+
+    public static final Long BRANCH_CODE = 1;
+
+    public static final double LOAN_PRINCIPAL_AMOUNT = 1000000.0;
+
+    // for auto group number generation
+    public static final String DEFAULT_HIBERNAT_EXCEPTION_GENERIC = 'default.hibernate.exception.generic'
+
+    public static final String UPDATE = "UPDATE "
+    public static final String DELETE = "DELETE "
+    public static final String VALUES = ") VALUES("
+    public static final String SET = " SET "
+    public static final String WHERE_CLAUSE = " WHERE id="
+    public static final String ID = "id"
+    public static final String VERSION = "version"
+    public static final String TABLE = "table"
+    public static final String ENDING_BRACKET_COLON = ");"
+    public static final String FIELD_MAP = "fieldMap"
+    public static final String PROPERTY_MAP = "propertyMap"
+    public static final String SQL = "sql"
+    public static final String PROPERTY_VALUES = "propertyValues"
+    public static final String IMPORT_DIRECTORY = "D:/import/"
+    public static final String EXPORT_DIRECTORY = "D:/export/"
+    public static final String EXPORT_FILE_PREFIX = "bdfp_"
+    public static final String EXPORT_FILE_SUFFIX = ".zip"
+    public static final String SQLOLD = "sqlold"
+    public static final String Delete = "DELETE"
+    public static final String OLD_PROPERTY_VALUES = "propertyValues"
+
+    public static final String Delete_From = "DELETE FROM"
+
+    public static final String PRIMARY_DEMAND_ORDER_APPROVAL_FORM = 'primaryDemandOrder/showPrimaryDemandOrderForApprove'
+    public static final String CASH_RECEIVED = "Cash Received"
+    public static final String ADJUSTMENT_USING_HO = "Adjustment Using HO"
+    public static final String EXPENSE_FROM_DP = "Expense  from DP"
+    public static final String CHECK_RECEIVED = "Check Received"
+    public static final String GONDOLA_CHARGE = "Gondola Charge"
+    public static final String OTHER_CHARGE = "Other Charge"
+    public static final String SALES = "Sales"
+    public static final String SERVICE_CHARGE = "VAT/Service Charge"
+    public static final String VAT = "VAT"
+    public static final String RECEIVABLE_ADJUSTED = "Receivable Adjusted"
+    public static final String WITHDRAW_AMOUNT = "Withdraw Amount"
+
+    // Module
+    public static final String MODULE_SALES = "Sales"
+    public static final String MODULE_SALES_RETURN = "Sales Return"
+    public static final String MODULE_CUSTOMER_PAYMENT = "Customer Payment"
+    public static final String MODULE_ADJUST_USING_HO_ACCOUNT = "Adjust Using HO Account"
+    public static final String MODULE_EXPENSE_DP_CASH_POOL = "Expense DP Cash Pool"
+    public static final String MODULE_PROCESS_PRIMARY_ORDER = "Process Primary Order"
+    public static final String MODULE_PROCESS_SECONDARY_ORDER = "Process Secondary Order"
+    public static final String MODULE_ADJUST_MISCELLANEOUS_FEES_WITH_RECEIVABLE = "Adjust Miscellaneous Fees With Receivable"
+    public static final String MODULE_INVENTORY_TO_INVENTORY_TRANSFER = "Module Inventory to Inventory Transfer"
+    public static final String MODULE_MUSHAK = "Mushak"
+    public static final String MODULE_ADJUST_ONE_PERCENT_BONUS = "Adjust One Percent Bonus"
+    public static final String MODULE_WRITE_OFF = "Write Off"
+    public static final String MODULE_RECEIVE_FINISH_GOODS = "Receive Finish Goods"
+    public static final String MODULE_DEPOSIT_CASH = "Deposit Cash"
+    public static final String MODULE_RECEIVE_PAYMENT_FROM_BRANCH = "Receive Payment from Branch"
+    public static final String MODULE_ADJUST_COMMISSION = "Adjust Commission"
+    public static final String MODULE_SECURITY_DEPOSIT = "Security Deposit"
+    public static final String MODULE_CUSTOMER_SETTLEMENT = "Customer Settlement"
+    public static final String MODULE_WITHDRAW_SECURITY_DEPOSIT = "Withdraw Security Deposit"
+    public static final String MODULE_MISCELLANEOUS_TRANSACTIONS = "Miscellaneous Transactions"
+    public static final String CALCULATE_ANDADJUST_INCENTIVE = "Calculate And Adjust Incentive"
+
+    public static final String MODULE_ADJUST_SECURITY_DEPOSIT_WITH_INVOICE="Adjust Security Deposit With Invoice"
+
+    public static final String MODULE_PROCESS_MARKET_RETURN="Process Market Return"
+
+    public static final String NOT_ACKNOWLEDGED = "NOT_ACKNOWLEDGED"
+    public static final String ACKNOWLEDGED = "ACKNOWLEDGED"
+    public static final String OPENING_BALANCE = "Opening Balance"
+
+}

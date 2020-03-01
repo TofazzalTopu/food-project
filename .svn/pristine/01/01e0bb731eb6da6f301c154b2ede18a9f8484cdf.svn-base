@@ -1,0 +1,234 @@
+package com.bits.bdfp.inventory.demandorder
+
+import com.bits.bdfp.customer.CustomerSalesChannel
+import com.bits.bdfp.inventory.demandorder.actions.ProcessSecondaryOrderActionService
+import com.bits.bdfp.inventory.demandorder.primarydemandorder.PrimaryProcessOrderAutoCompleteAction
+import com.bits.bdfp.inventory.demandorder.secondarydemandorder.SecondaryProcessOrderAutoCompleteAction
+import com.bits.bdfp.inventory.demandorder.primarydemandorder.ProcessOrderAutoCompleteAction
+import com.bits.bdfp.inventory.demandorder.processanorder.CreatePrimaryDemandOrderDetailsAction
+import com.bits.bdfp.inventory.demandorder.processanorder.GetAdvanceAmountFromSubLedgerAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ItemAvailabilityDetailsForProcessOrderAction
+import com.bits.bdfp.inventory.demandorder.processanorder.OrderDetailsForProcessOrderAction
+import com.bits.bdfp.inventory.demandorder.processanorder.OrderDetailsForProcessSecondaryOrderAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ProcessAnOrderAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ProcessBatchWiseOrderAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ProcessInvoiceAccountsAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ProcessPrimaryOrderAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ProcessSecondaryDemandOrderAction
+
+//import com.bits.bdfp.inventory.demandorder.processanorder.ProcessSecondaryOrderAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ProductBatchAllocationDetailsAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ProductListSeelctAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ProductOrderDetailsAction
+import com.bits.bdfp.inventory.demandorder.processanorder.ScondaryDemandOrderUpdateDetailsAction
+import com.bits.bdfp.inventory.demandorder.processanorder.SecondaryItemAvailabilityForProcessOrderAction
+import com.bits.bdfp.inventory.demandorder.processanorder.UpdateDemandOrderDetailsAction
+import com.bits.bdfp.inventory.demandorder.processanorder.UpdateDemandOrderForProcessAction
+import com.bits.bdfp.inventory.demandorder.processanorder.UpdateSecondaryDemandOrderProcessAction
+import com.bits.bdfp.inventory.warehouse.warehouse.ListFactoryWarehouseByApplicationUserAction
+import com.bits.bdfp.inventory.warehouse.warehouse.ListNonFactoryWarehouseByApplicationUserAction
+import com.bits.bdfp.reports.SearchReportInfoAction
+import com.bits.bdfp.settings.enterpriseconfiguration.EnterpriseAutocompleteListAction
+import com.docu.common.Message
+import com.docu.security.ApplicationUser
+import grails.converters.JSON
+
+import org.springframework.beans.factory.annotation.Autowired
+
+
+class ProcessDemandOrderController {
+    @Autowired
+    OrderDetailsForProcessOrderAction orderDetailsForProcessOrderAction
+    @Autowired
+    ItemAvailabilityDetailsForProcessOrderAction itemAvailabilityDetailsForProcessOrderAction
+    @Autowired
+    ProcessAnOrderAction processAnOrderAction
+    @Autowired
+    UpdateDemandOrderForProcessAction updateDemandOrderForProcessAction
+    @Autowired
+    ProductListSeelctAction productListSeelctAction
+    @Autowired
+    UpdateDemandOrderDetailsAction updateDemandOrderDetailsAction
+    @Autowired
+    CreatePrimaryDemandOrderDetailsAction createPrimaryDemandOrderDetailsAction
+    @Autowired
+    ProductOrderDetailsAction productOrderDetailsAction
+    @Autowired
+    ProductBatchAllocationDetailsAction productBatchAllocationDetailsAction
+    @Autowired
+    ProcessBatchWiseOrderAction processBatchWiseOrderAction
+    @Autowired
+    PrimaryProcessOrderAutoCompleteAction primaryProcessOrderAutoCompleteAction
+    @Autowired
+    ProcessOrderAutoCompleteAction processOrderAutoCompleteAction
+    @Autowired
+    OrderDetailsForProcessSecondaryOrderAction orderDetailsForProcessSecondaryOrderAction
+    @Autowired
+    SecondaryItemAvailabilityForProcessOrderAction secondaryItemAvailabilityForProcessOrderAction
+    @Autowired
+    UpdateSecondaryDemandOrderProcessAction updateSecondaryDemandOrderProcessAction
+    @Autowired
+    ScondaryDemandOrderUpdateDetailsAction scondaryDemandOrderUpdateDetailsAction
+    @Autowired
+    ProcessSecondaryDemandOrderAction processSecondaryDemandOrderAction
+    @Autowired
+    EnterpriseAutocompleteListAction enterpriseAutocompleteListAction
+    @Autowired
+    GetAdvanceAmountFromSubLedgerAction getAdvanceAmountFromSubLedgerAction
+    @Autowired
+    ProcessInvoiceAccountsAction processInvoiceAccountsAction
+    @Autowired
+    ProcessPrimaryOrderAction processPrimaryOrderAction
+//    @Autowired
+//    ProcessSecondaryOrderAction processSecondaryOrderAction
+    @Autowired
+    ListFactoryWarehouseByApplicationUserAction listFactoryWarehouseByApplicationUserAction
+    @Autowired
+    ListNonFactoryWarehouseByApplicationUserAction listNonFactoryWarehouseByApplicationUserAction
+    @Autowired
+    SecondaryProcessOrderAutoCompleteAction secondaryProcessOrderAutoCompleteAction
+    @Autowired
+    SearchReportInfoAction searchReportInfoAction
+
+    ProcessSecondaryOrderActionService processSecondaryOrderActionService
+
+    PrimaryDemandOrderService primaryDemandOrderService
+
+    Message message
+    def show = {
+        ApplicationUser applicationUser = session?.applicationUser
+        List list = enterpriseAutocompleteListAction.execute(applicationUser, null)
+        List warehouseList = (List) listFactoryWarehouseByApplicationUserAction.execute(params, null)
+        List<CustomerSalesChannel> salesChannelList = searchReportInfoAction.detailSalesChannelList()
+        render(template: "show", model: [warehouseList: warehouseList as JSON, enterpriseList: list as JSON, size: list.size(), salesChannelList: salesChannelList as JSON, salesChannelSize: salesChannelList.size()])
+    }
+
+    def showOrderDetails = {
+        ApplicationUser applicationUser = session?.applicationUser
+        params.put("applicationUser", applicationUser)
+        render orderDetailsForProcessOrderAction.execute(params, applicationUser) as JSON
+    }
+
+    def showItemAvailabilityDetails = {
+        render itemAvailabilityDetailsForProcessOrderAction.execute(params, null) as JSON
+    }
+
+    def processSelectedOrder = {
+        message = processPrimaryOrderAction.execute(params, null)
+        render message as JSON
+    }
+
+    def updateDemandOrderPopup = {
+        ApplicationUser applicationUser = session?.applicationUser
+        List productList = productListSeelctAction.execute(params, applicationUser)
+        render(template: "updateDemandOrder", model: [list: productList])
+    }
+
+    def updateDemandOrderDetails = {
+        render updateDemandOrderForProcessAction.execute(params, null) as JSON
+    }
+    def showCustomerName = {
+        PrimaryDemandOrder primaryDemandOrder = primaryDemandOrderService.read(Long.parseLong(params.orderId))
+        if (primaryDemandOrder) {
+            render primaryDemandOrder.customerOrderFor.name
+        } else {
+            render ''
+        }
+    }
+
+    def getAdvanceAmountFromSubLedger = {
+        render getAdvanceAmountFromSubLedgerAction.execute(params, null) as JSON
+    }
+
+    def demandOrderDetailsUpdate = {
+        ApplicationUser applicationUser = session?.applicationUser
+        message = updateDemandOrderDetailsAction.execute(params, applicationUser)
+        render message as JSON
+    }
+
+    def createPrimaryDemandOrderDetails = {
+        ApplicationUser applicationUser = session?.applicationUser
+        message = createPrimaryDemandOrderDetailsAction.execute(params, applicationUser)
+        render message as JSON
+    }
+
+    def productBatchPopup = {
+        List productList = productOrderDetailsAction.execute(params, null)
+        render(template: "productBatchAllocation", model: [list: productList])
+    }
+
+    def productBatchDetails = {
+        render productBatchAllocationDetailsAction.execute(params, null) as JSON
+    }
+
+    def processBatchWiseOrder = {
+        ApplicationUser applicationUser = session?.applicationUser
+        message = processBatchWiseOrderAction.execute(params, applicationUser)
+        render message as JSON
+    }
+
+    def secondaryDemandOrderShow = {
+        List warehouseList = (List) listNonFactoryWarehouseByApplicationUserAction.execute(params, null)
+        render(template: "secondaryOrderShow", model: [warehouseList: warehouseList as JSON, warehouseCount: warehouseList.size()])
+    }
+
+    def listOrderForAutoComplete = {
+        ApplicationUser applicationUser = session?.applicationUser
+        render primaryProcessOrderAutoCompleteAction.execute(params, applicationUser) as JSON
+    }
+
+    def listOrderForAutoCompleteSecondary = {
+        ApplicationUser applicationUser = session?.applicationUser
+        render secondaryProcessOrderAutoCompleteAction.execute(params, applicationUser) as JSON
+    }
+
+    def listOrderForProcessAutoComplete = {
+        ApplicationUser applicationUser = session?.applicationUser
+        render processOrderAutoCompleteAction.execute(params, applicationUser) as JSON
+    }
+
+    def showProcessSecondaryOrderDetails = {
+        render orderDetailsForProcessSecondaryOrderAction.execute(params, null) as JSON
+    }
+
+    def showSecondaryItemAvailability = {
+        render secondaryItemAvailabilityForProcessOrderAction.execute(params, null) as JSON
+    }
+
+    def updateSecondaryDemandOrderPopup = {
+        ApplicationUser applicationUser = session?.applicationUser
+        params.put('secondary', 1)
+        List productList = productListSeelctAction.execute(params, applicationUser)
+        render(template: "updateSecondaryDemandOrder", model: [list: productList, params: params])
+//        render(template: "updateSecondaryDemandOrder", model: [params: params])
+    }
+
+    def updateSecondaryDemandOrderDetails = {
+        render updateSecondaryDemandOrderProcessAction.execute(params, null) as JSON
+    }
+
+    def createSecondaryDemandOrderDetails = {
+        ApplicationUser applicationUser = session?.applicationUser
+        params.put('secondary', 1)
+        message = createPrimaryDemandOrderDetailsAction.execute(params, applicationUser)
+        render message as JSON
+    }
+
+    def secondaryDemandOrderDetailsUpdate = {
+        ApplicationUser applicationUser = session?.applicationUser
+        message = scondaryDemandOrderUpdateDetailsAction.execute(params, applicationUser)
+        render message as JSON
+    }
+
+    def processSecondaryOrder = {
+        message = processSecondaryOrderActionService.execute(params, null)
+        render message as JSON
+    }
+
+    def processInvoice = {
+        ApplicationUser applicationUser = session?.applicationUser
+        message = processInvoiceAccountsAction.execute(params, applicationUser)
+        render message as JSON
+    }
+
+}

@@ -1,0 +1,12 @@
+/*
+input{width:98%}
+select{width:98%}
+textarea{width:98%}
+
+p, div, span, li, lu, ol, td, th,
+input, select, textarea{font-family:Verdana, Arial; font-size:12px;}
+*/
+
+
+
+

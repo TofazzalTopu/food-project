@@ -1,0 +1,79 @@
+#navbar_main_wrapper {
+    background-color: #2E2E2E;
+    left: 0;
+    position: relative;
+    top: 0;
+}
+
+#navbar_main {
+    background: none repeat scroll 0 0 #FFFFFF;
+    /*border-bottom: 1px solid #24618E;*/ /*HAIDER*/
+    height: 22px;
+    left: 0;
+    line-height: normal;
+    width: 100%;
+}
+
+#navbar_main_wrapper ul {
+    list-style: none outside none;
+    margin: 0;
+    overflow: visible;
+    padding: 10px 8px 0 0;
+    position: relative;
+    z-index: 500;
+}
+
+#navbar_main li {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+#navbar_main li.unselected a {
+    color: #666666;
+    float: right;
+    height: auto;
+}
+
+#navbar_main li.selected a {
+    background-color: #FFFFFF;
+    background-position: 0 -42px;
+    height: auto;
+    float: right;
+}
+
+#navbar_main li.selected a span {
+    background-position: 100% -42px;
+    color: #FFFFFF;
+}
+
+#navbar_main a {
+    background: url("../images/tableftJ.gif") no-repeat scroll left top transparent;
+    float: left;
+    margin: 0;
+    padding: 0 0 0 5px;
+    text-decoration: none;
+}
+
+#navbar_main a span {
+    background: url("../images/tabrightJ.gif") no-repeat scroll right top transparent;
+    color: #24618E;
+    display: block;
+    float: left;
+    margin-left: -2px;
+    padding: 5px 15px 4px 8px;
+}
+
+#navbar_main a span {
+    float: none;
+}
+
+#navbar_main a:hover {
+    background-position: 0 -42px;
+    color: #FFFFFF;
+}
+
+#navbar_main a:hover span {
+    background-position: 100% -42px;
+    color: #FFFFFF;
+}

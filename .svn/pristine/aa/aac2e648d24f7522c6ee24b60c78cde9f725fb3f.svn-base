@@ -1,0 +1,42 @@
+/*
+ * ****************************************************************
+ * Copyright © 2010 Documentatm (TM) Limited. All rights reserved.
+ * DOCUMENTA PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+ * This software is the confidential and proprietary information of
+ * Documentatm (TM) Limited ("Confidential Information").
+ * You shall not disclose such Confidential Information and shall use
+ * it only in accordance with the terms of the license agreement
+ * you entered into with Documentatm (TM) Limited.
+ * *****************************************************************
+ */
+
+
+.simple-table-css{
+    border-collapse:collapse;
+    border:0px solid #2E6E9E;
+    border-right:1px solid #2E6E9E;
+    border-top:1px solid #2E6E9E;
+}
+
+.simple-table-css td{
+    border-bottom:1px solid #2E6E9E;
+    border-left:1px solid #2E6E9E;
+    padding: 5px;
+    color: #2E6E9E;
+    font-size: 11px;
+    /*font-family: Verdana, Arial;*/
+}
+
+.simple-table-css tr:first-child td{
+    font-weight: bold;
+    background-color: #DFEFFC;
+}
+
+.simple-table-css .button-delete{
+    background-image:url(images/cross.png);
+    background-repeat:no-repeat;
+    background-position: center center;
+    width: 10px;
+    height: 7px;
+    cursor: pointer;
+}

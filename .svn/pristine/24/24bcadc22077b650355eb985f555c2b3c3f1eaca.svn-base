@@ -1,0 +1,700 @@
+<%@ page import="com.bits.bdfp.util.ApplicationConstants; com.docu.commons.CommonConstants" %>
+<script type="text/javascript" language="Javascript">
+    var subAreaList = ${subAreaList};
+    var jqGridProductList = null;
+
+
+ var allElements = new Array();
+ var elementIndex = 0;
+ var lastSel = -1;
+ var qtyText = '';
+ function checkForValue(elem) {
+    if (!elem) {
+        return [false, "Please enter marks."];
+     }
+     else {
+         return [true, ""];
+     }
+ }
+
+    var updateOrderEditor = {
+        onEnterKeyPressToGridCell: function () {
+            var callback = {
+                type: 'keydown',
+                fn: function (e) {
+                    debugger
+                    var key = e.charCode || e.keyCode;
+                    if (key == 9) {
+                        if (this.name == allElements[allElements.length - 1].name) {
+                            e.preventDefault();
+                            jQuery('#jqgrid-grid-finishProduct').restoreRow(lastSel);
+                            updateOrderEditor.editGridCell(lastSel)
+                        }
+                    }
+                    else if (key == 13) {
+                        jQuery('#jqgrid-grid-finishProduct').restoreRow(lastSel);
+                        updateOrderEditor.editGridCell(lastSel)
+                      //  $("#transferQty").focus();
+                    }
+                }
+            };
+            return callback;
+        },
+
+        editGridCell: function (rowid) {
+            var qty = qtyText.value;
+            if(qty && rowid){
+                if(isNaN(qty)){
+                    var msg={"class":"com.docu.common.Message","messageBody":["Please enter number as quantity"],"messageTitle":"Message","type":0}
+                    MessageRenderer.render(msg);
+                }
+                else{
+                }
+            }
+        }
+    };
+
+    $(document).ready(function () {
+        textboxes = $("input:visible:not([disabled],[readonly]),select,button");
+        if ($.browser.mozilla) {
+            $(textboxes).keypress(checkForEnter);
+        } else {
+            $(textboxes).keydown(checkForEnter);
+        }
+
+        $("#gFormRetailOrder").validationEngine({   //    client side validation
+            isOverflown: true,
+            overflownDIV: ".ui-layout-center"
+        });
+        $("#gFormRetailOrder").validationEngine('attach');
+        reset_formRetailOrder("#gFormRetailOrder");
+        $("#deliveryManList").flexbox('null', {
+            watermark: "Select Delivery Man",
+            width: 280,
+            onSelect: function () {
+                $("#deliveryMan").val($('#deliveryManList_hidden').val());
+            }
+        });
+        $("#deliveryDate").datepicker(
+                {
+                    dateFormat: 'dd-mm-yy',
+                    changeMonth: true,
+                    changeYear: true
+//                    minDate: +1
+                });
+
+        $('#deliveryDate').mask('${CommonConstants.DATE_MASK_FORMAT}', {});
+
+        if(subAreaList){
+            var optionData = '<option value="">Select Geo Location</option>';
+            var index = 0;
+            for(index = 0; index < subAreaList.length; index++){
+                optionData += '<option value="' + subAreaList[index].id + '">' + subAreaList[index].geo_location + '</option>';
+            }
+            $("select#territorySubArea").html(optionData);
+            $("#territorySubArea").focus();
+        }
+
+        manageKeyPress("#quantity", "#add-button", '13', '1');
+//        manageKeyPress("#add-button", "#searchProductKey", '13');
+
+
+    /*    jqGridProductList = $("#jqgrid-grid-finishProduct").jqGrid({
+            url:'',
+            datatype: "local",
+            colNames:[
+                'ID',
+                'retailOrderDetailsId',
+                'Product Code',
+                'Product Name',
+                'Quantity',
+                'QtyInLtr',
+                'QtyInLtrHidden',
+                'Rate',
+                'Amount',
+                ''
+            ],
+            colModel:[
+                {name:'id', index:'id', width:0, hidden:true},
+                {name:'retailOrderDetailsId', index:'retailOrderDetailsId', hidden: true},
+                {name:'productCode', index:'productCode', width:120, align:'center', sortable: false},
+                {name:'productName', index:'productName', width:200, align:'left', sortable: false},
+                {name:'quantity', index:'quantity', width:80, align:'center', formatter:"number", editable: true, editrules:{number:true}, formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 0}, sortable: false},
+                {name:'qtyInLtr', index:'qtyInLtr', width:80, align:'right', formatter:"number", formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}, sortable: false},
+                {name:'qtyInLtrHidden', index:'qtyInLtrHidden', width:80, align:'right', formatter:"number", formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}, sortable: false, hidden: true},
+                {name:'rate', index:'rate', width:80, align:'right', formatter:'currency', formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}, sortable: false},
+                {name:'amount', index:'amount', width:80, align:'right', formatter:'currency', formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}, sortable: false},
+                {name:'delete', index:'delete', width:30, align:'center', sortable:false}
+            ],
+            rowNum: -1,
+            viewrecords:true,
+            caption:"Product List",
+            autowidth:true,
+            height:true,
+            scrollOffset:0,
+            gridview:true,
+            sortable: false,
+//            multiselect: true,
+            rownumbers: true,
+            cellEdit: true,
+            cellsubmit: 'clientArray',
+            cellurl: null,
+            footerrow : true,
+            gridComplete: function() {
+                calculateSummaryData();
+            },
+            loadComplete: function (data) {
+                $.each(data.rows, function (i, item) {
+                    var rowData = $("#jqgrid-grid-finishProduct").jqGrid('getRowData', data.rows[i].id);
+                    rowData.delete = '<a  href="javascript:deleteProduct(' + data.rows[i].id + ')" class="ui-icon ui-icon-trash" title="Delete"></a>';
+                    $('#jqgrid-grid-finishProduct').jqGrid('setRowData', data.rows[i].id, rowData);
+                });
+            },
+            onSelectRow: function(rowid, status) {
+//                executeEditSaleItem();
+            },
+            afterSaveCell : function(rowid,name,val,iRow,iCol) {
+                var rowData = $("#jqgrid-grid-finishProduct").jqGrid('getRowData', rowid);
+                rowData.amount = rowData.quantity * rowData.rate;
+                rowData.qtyInLtr = rowData.quantity * rowData.qtyInLtrHidden;
+                $('#jqgrid-grid-finishProduct').jqGrid('setRowData', rowid, rowData);
+                calculateSummaryData();
+            },
+            loadError: function (jqXHR, textStatus, errorThrown) {
+                MessageRenderer.renderErrorText(jqXHR.responseText,'');
+            }
+        });
+*/
+
+        $("#jqgrid-grid-finishProduct").jqGrid({
+            url: '',
+            datatype: "local",
+            colNames: [
+                'Master Product',
+                'Main Product',
+                'Product Name',
+                'Product ID',
+               'Qty In Ltr',
+                'Rate',
+                'Order Qty',
+                'Qty In Ltr',
+                'Amount'
+            ],
+            colModel: [
+                {name: 'masterName', index: 'masterName', width: 200, align: 'left', hidden:true},
+                {name: 'mainName', index: 'mainName', width: 200, align: 'left', hidden:true},
+                {name: 'productName', index: 'productName', width: 200, align: 'left'},
+                {name: 'productId', index: 'productId', width: 120, align: 'left', hidden:true},
+                {name: 'qtyInLtr', index: 'qtyInLtr', width: 100, align: 'left' , hidden:true},
+                {name: 'price', index: 'price', width: 100, align: 'right'},
+                {name:'transferQty', index:'transferQty', width:100,align:'center', editable: true, editrules:{number:true}},
+                {name: 'qtyInLtrConvert', index: 'qtyInLtrConvert', width: 100, align: 'right', formatter:"number",  formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}, sortable: false},
+                {name: 'totalPrice', index: 'totalPrice', width: 100, align: 'center', formatter:"number",  formatoptions:{decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2}, sortable: false}
+            ],
+            rowNum: 200,
+            rowList: [50, 100, 150, 200, 250, 300],
+            pager: '#jqgrid-product-pager',
+            sortname: 'id',
+            viewrecords: true,
+            sortorder: "asc",
+            caption: "Available Products List",
+            autowidth: true,
+            height: true,
+            scrollOffset: 0,
+            gridview:true,
+           // multiselect: true,
+            footerrow : true,
+            cellEdit: true,
+            cellsubmit: 'clientArray',
+            cellurl: null,
+            rownumbers: true,
+            loadComplete: function () {
+               calculateSummaryData();
+            },
+            onSelectRow: function (rowid, status) {
+            },
+            afterSaveCell : function(rowid,name,val,iRow,iCol) {
+                var rowData = $("#jqgrid-grid-finishProduct").jqGrid('getRowData', rowid);
+                rowData.totalPrice = rowData.transferQty * rowData.price;
+                rowData.qtyInLtrConvert = rowData.transferQty * rowData.qtyInLtr;
+                $('#jqgrid-grid-finishProduct').jqGrid('setRowData', rowid, rowData);
+                $('#jqgrid-grid-finishProduct').jqGrid('setSelection', rowid);
+
+                calculateSummaryData();
+            },
+            loadError: function (jqXHR, textStatus, errorThrown) {
+                MessageRenderer.renderErrorText(jqXHR.responseText,'');
+            }
+        });
+    });
+
+    function executePreConditionRetailOrder() {
+
+        // trim field vales before process.
+        trim_form();
+        if (!$("#gFormRetailOrder").validationEngine('validate')) {
+            return false;
+        }
+        return true;
+    }
+    function executeAjaxRetailOrder(isSubmitted) {
+        if (!executePreConditionRetailOrder()) {
+            return false;
+        }
+
+        var allData = {};
+
+        allData["orderPlacedFor.id"] = $("#customerId").val();
+        allData["territorySubArea.id"] = $("#territorySubArea").val();
+        allData["deliveryMan.id"] = $("#deliveryMan").val();
+        allData["deliveryDate"] = $("#deliveryDate").val();
+        allData["enterprise.id"] = $("#enterprise").val();
+        allData["orderDate"] = $("#orderDate").val();
+
+        var allRowsOnCurrentPage = $('#jqgrid-grid-finishProduct').jqGrid('getDataIDs');
+
+      //  var selectedProductIds = $('#jqgrid-grid-finishProduct').jqGrid('getGridParam', 'selarrrow');
+        var productIds = filterListOfIds(allRowsOnCurrentPage);
+        var total = 0;
+        var numberOfIds = 0;
+
+        for(var i = 0; i < productIds.length; i++){
+            var transferQty = $("#jqgrid-grid-finishProduct").getRowData(productIds[i]).transferQty;
+            if(transferQty ) {
+                if(transferQty == 0){
+                    MessageRenderer.renderErrorText("Order quantity must be more then zero");
+                    return false;
+                }
+                allData["products.product[" + i + "].productId"] = $("#jqgrid-grid-finishProduct").getRowData(productIds[i]).productId;
+                allData["products.product[" + i + "].unitPrice"] = $("#jqgrid-grid-finishProduct").getRowData(productIds[i]).price;
+                allData["products.product[" + i + "].transferQty"] = transferQty;
+                total += parseFloat(transferQty);
+                numberOfIds += 1;
+            }
+        }
+        if(numberOfIds == 0){
+            MessageRenderer.renderErrorText("Please select at least one product from the list.");
+            return false;
+        }
+
+        if(isSubmitted){
+            allData["isSubmitted"] = 'true';
+        }
+        SubmissionLoader.showTo();
+        jQuery.ajax({
+            type: 'post',
+            data: allData,
+            url: "${resource(dir:'retailOrder', file:'create')}",
+            success: function (data, textStatus) {
+                executePostConditionRetailOrder(data);
+            },
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    reset_formRetailOrder('#gFormRetailOrder');
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                } else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete: function () {
+                calculateSummaryData();
+                SubmissionLoader.hideFrom();
+            },
+            dataType: 'json'
+        });
+        return false;
+    }
+
+    function filterListOfIds(idsArray){
+        var ids = [];
+        $.each(idsArray, function(i, e) {
+            if ($.inArray(e, ids) == -1) ids.push(e);
+        });
+        ids = ids.filter(function(n){ return n != undefined });
+        return ids;
+    }
+
+    //Set all Product to grid
+    function getAllProductListBySubInventoryId(customerId){
+        jQuery("#jqgrid-grid-finishProduct").clearGridData();
+        if(id){
+            var territorySubAreaId = $("#territorySubArea").val();
+            %{--jQuery("#jqgrid-grid-finishProduct").jqGrid('setGridParam', {--}%
+                        %{--url: "${resource(dir:'retailOrder', file:'jsonProductList')}?customerId=" + customerId + "&territorySubAreaId=" + territorySubAreaId,--}%
+                        %{--datatype: "json",--}%
+                        %{--mtype: "POST"--}%
+                    %{--})--}%
+                    %{--.trigger("reloadGrid", [--}%
+                        %{--{page: 1}--}%
+                    %{--]);--}%
+//            SubmissionLoader.showTo();
+            jQuery.ajax({
+                type: 'post',
+                data: {customerId:customerId,territorySubAreaId: territorySubAreaId},
+                url: '${resource(dir:'retailOrder', file:'jsonProductListForRetailOrder')}',
+                success: function (data, textStatus) {
+                    if(data[0]){
+                        jQuery("#jqgrid-grid-finishProduct")
+                                .jqGrid('setGridParam',
+                                {
+                                    datatype: 'local',
+                                    data: data
+                                })
+                                .trigger("reloadGrid", [
+                                    {page: 1}
+                                ]);
+                    }else{
+                        jQuery("#jqgrid-grid-finishProduct").clearGridData();
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    if(XMLHttpRequest.status = 0){
+                        MessageRenderer.renderErrorText("Network Problem: Time out");
+                    } else{
+                        MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                    }
+                },
+                complete: function () {
+                    SubmissionLoader.hideFrom();
+                },
+                dataType: 'json'
+            });
+        }
+    }
+
+    function manageKeyPress(curElement, nextElement, key, clickable, nextClickable ){
+        $(curElement).keypress(function(e) {
+            if(e.keyCode == key) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                $(nextElement).focus();
+                $(nextElement).select();
+                if(typeof(clickable) == 'undefined') clickable = "0";
+                if(clickable == "1"){
+                    $(curElement).click();
+                }
+                if(typeof(nextClickable) == 'undefined') nextClickable = "0";
+                if(clickable == "1"){
+                    $(nextElement).click();
+                }
+            }
+        });
+    }
+
+    /*function executeAjaxRetailOrder(isSubmitted) {
+        if (!executePreConditionRetailOrder()) {
+            return false;
+        }
+        $('#jqgrid-grid-finishProduct').jqGrid("editCell", 0, 0, false);
+        var data =  $("#gFormRetailOrder").serializeArray();
+        var gd = $("#jqgrid-grid-finishProduct").jqGrid('getRowData');
+        var length = gd.length;
+        for (var i=0; i < length; ++i) {
+            data.push({'name':'items.retailOrderDetails['+i+'].finishProduct.id', 'value': gd[i].id});
+            data.push({'name':'items.retailOrderDetails['+i+'].id', 'value': gd[i].retailOrderDetailsId});
+            data.push({'name':'items.retailOrderDetails['+i+'].rate', 'value': gd[i].rate});
+            data.push({'name':'items.retailOrderDetails['+i+'].retailOrder.id', 'value': $('#gFormRetailOrder input[name = id]').val()});
+            data.push({'name':'items.retailOrderDetails['+i+'].quantity', 'value': gd[i].quantity});
+        }
+        if(isSubmitted){
+            data.push({'name':'isSubmitted', 'value': 'true'});
+        }
+        SubmissionLoader.showTo();
+        jQuery.ajax({
+            type: 'post',
+            data: data,
+            url: "${request.contextPath}/${params.controller}/create",
+            success: function (data, textStatus) {
+                executePostConditionRetailOrder(data);
+            },
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    reset_formRetailOrder('#gFormRetailOrder');
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                } else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete: function () {
+                SubmissionLoader.hideFrom();
+            },
+            dataType: 'json'
+        });
+        return false;
+    }*/
+    function executePostConditionRetailOrder(result) {
+        if (result.type == 1) {
+            reset_formRetailOrder('#gFormRetailOrder');
+        }
+        MessageRenderer.render(result);
+    }
+
+    function reset_formRetailOrder(formName) {
+        var enterprise = $("#enterprise").val();
+        $(formName).find(":input").not(":button, :submit, :reset, :checkbox, :radio").each(function () {
+            if (this.type == 'hidden') {
+                this.value = "";
+            } else {
+                this.value = this.defaultValue;
+            }
+        });
+        $('input[type=checkbox]').attr('checked', false);
+        $(formName + ' input[name = create-button]').attr('value', 'Create');
+        $(formName + ' input[name = delete-button]').hide();
+        $("#enterprise").val(enterprise);
+        if(${userTypeId} == ${ApplicationConstants.USER_TYPE_CUSTOMER}){
+            $("#deliveryMan").val(${deliveryManId});
+        }
+        $("#jqgrid-grid-finishProduct").jqGrid('clearGridData');
+    }
+
+    function trim_form() {
+        $(":input").not(":button, :submit, :reset, :checkbox, :radio").each(function () {
+            this.value = $.trim(this.value);
+        });
+    }
+
+    function changeGeolocation(geoLocationId){
+        if(geoLocationId){
+            if(${userTypeId} != ${ApplicationConstants.USER_TYPE_CUSTOMER}) {
+                loadDeliveryManByGeoLocation(geoLocationId);
+            }
+            loadCustomerForRetailOrder(geoLocationId);
+            var index = 0;
+            for(index = 0; index < subAreaList.length; index++){
+                if(subAreaList[index].id == geoLocationId){
+                    $("#road").val(subAreaList[index].road);
+                    break;
+                }
+            }
+            $("#searchCustomerKey").focus();
+        }else{
+            $("#road").val("");
+        }
+    }
+    function loadDeliveryManByGeoLocation(geoLocationId){
+        $("#deliveryManList").empty();
+        $("#deliveryMan").val("");
+        $.ajax({
+            type:'POST',
+            data:'territorySubAreaId=' + geoLocationId,
+            url:'${request.contextPath}/retailOrder/listDeliveryMan',
+            success:function (result) {
+                $("#deliveryManList").flexbox(result, {
+                    watermark: "Select Delivery Man",
+                    width: 280,
+                    onSelect: function () {
+                        $("#deliveryMan").val($('#deliveryManList_hidden').val());
+                    }
+                });
+                $('#deliveryManList_input').blur(function () {
+                    if ($('#deliveryManList_input').val() == '') {
+                        $("#deliveryMan").val("");
+                    }
+                });
+                $('#deliveryManList_input').addClass("validate[required]");
+            },
+            error:function (XMLHttpRequest, textStatus, errorThrown) {
+                if(XMLHttpRequest.status = 0){
+                    $('#deliveryManList_input').blur(function () {
+                        if ($('#deliveryManList_input').val() == '') {
+                            $("#deliveryMan").val("");
+                        }
+                    });
+                    $('#deliveryManList_input').addClass("validate[required]");
+                    MessageRenderer.renderErrorText("Network Problem: Time out");
+                } else{
+                    MessageRenderer.renderErrorText(XMLHttpRequest.responseText);
+                }
+            },
+            complete:function (data) {
+            },
+            dataType:'json'
+        });
+    }
+    var CustomerInfo = {
+        customerCoreInfoId: null,
+        popupCustomerListPanel: function(){
+            var territorySubAreaId = $("#territorySubArea").val();
+            if(!territorySubAreaId){
+                MessageRenderer.render({
+                    "messageBody": "Geo Location is not selected",
+                    "messageTitle": "Create Retail Order",
+                    "type": "0"
+                });
+                return
+            }
+            var url = '${resource(dir:'retailOrder', file:'popupCustomerListPanel')}' ;
+            var params = {territorySubAreaId: territorySubAreaId};
+            DocuAjax.html(url, params, function(html){
+                $.fancybox(html);
+            });
+        },
+        setCustomerInformation: function(customerCoreInfoId, customerCoreInfo, cusLegacyId, cusName, cusCode, cusAddress){
+            $("#searchCustomerKey").val(customerCoreInfo);
+            $("#customerId").val(customerCoreInfoId);
+            $("#legacyId").val(cusLegacyId);
+            $("#customerName").val(cusName);
+            $("#customerNumber").val(cusCode);
+            $("#customerAddress").val(cusAddress);
+            getAllProductListBySubInventoryId(customerCoreInfoId);
+            CustomerInfo.customerCoreInfoId = customerCoreInfoId;
+        },
+        popupProductListPanel: function(customerCoreInfoId){
+            var url = '${resource(dir:'retailOrder', file:'popupProductListPanel')}' ;
+            var params = {customerId: customerCoreInfoId, territorySubAreaId:$("#territorySubArea").val()};
+            DocuAjax.html(url, params, function(html){
+                $.fancybox(html);
+            });
+        }
+    };
+
+    function loadCustomerForRetailOrder(territorySubAreaId) {
+        jQuery('#searchCustomerKey').autocomplete({
+            minLength:'1',
+            source:function (request, response) {
+                var data = {searchKey: request.term, territorySubAreaId: territorySubAreaId};
+                var url = '${resource(dir:'retailOrder', file:'customerAutoComplete')}';
+                DocuAutoComplete.setSpinnerSelector('searchKey').execute(response, url, data, function (item) {
+                    item['label'] = "[" + item['code'] + "] " + item['name'];
+                    item['value'] = item['label'];
+                    return item;
+                });
+            },
+            select:function (event, ui) {
+                getAllProductListBySubInventoryId(ui.item.id);
+                $("#customerId").val(ui.item.id);
+                $("#legacyId").val(ui.item.legacy_id);
+                $("#customerNumber").val(ui.item.code);
+                $("#customerName").val(ui.item.name);
+                $("#customerAddress").val(ui.item.address);
+                $('#searchProductKey').focus();
+            }
+        }).data("autocomplete")._renderItem = function (ul, item) {
+            var custometDetailts = "";
+            if (item) {
+                custometDetailts = '<div style="font-size: 9px; color:#326E93;">' + "Legacy ID: " + item.legacy_id +", Code: " +item.code + ", Name: " + item.name + ", Status: " + item.status + ", Address: " + item.address + '</div>';
+            }
+            return $("<li></li>").data("item.autocomplete", item).append('<a>' + item['label'] + '</a>' + custometDetailts).appendTo(ul);
+        };
+    }
+
+    $('#search-btn-customer-register-id').click(function(){
+        CustomerInfo.popupCustomerListPanel();
+    });
+
+    function calculateSummaryData() {
+        var $grid = $('#jqgrid-grid-finishProduct');
+        var sumAmount = $grid.jqGrid('getCol', 'totalPrice', false, 'sum');
+        var qtyInLtrConvert = $grid.jqGrid('getCol', 'qtyInLtrConvert', false, 'sum');
+
+        $grid.jqGrid('footerData', 'set', { 'totalPrice': sumAmount });
+        $grid.jqGrid('footerData', 'set', { 'qtyInLtrConvert': qtyInLtrConvert });
+        $grid.jqGrid('footerData', 'set', { 'productName': 'Total'});
+    }
+
+    /*
+    function loadProduct(customerId) {
+        $('#searchProductKey').blur(function () {
+            if ($('#searchProductKey').val() == '') {
+                $("#productId").val('');
+            }
+        });
+        var territorySubAreaId = $("#territorySubArea").val();
+        jQuery('#searchProductKey').autocomplete({
+            minLength:'1',
+            source:function (request, response) {
+                var data = {searchKey:request.term};
+                var url = '${resource(dir:'retailOrder', file:'listProduct')}?customerId=' + customerId + "&territorySubAreaId=" + territorySubAreaId + "&query=" + $('#searchProductKey').val();
+                DocuAutoComplete.setSpinnerSelector('searchProductKey').execute(response, url, data, function (item) {
+                    item['label'] = "[" + item['code'] + "] " + item['name'];
+                    item['value'] = item['label'];
+                    return item;
+                });
+            },
+            select:function (event, ui) {
+                $("#searchProductKey").val(ui.item.value);
+                $("#productId").val(ui.item.id);
+                $('#rate').val(ui.item.price);
+                $('#qtyInLtr').val(ui.item.qtyInLtr);
+                $('#productCode').val(ui.item.code);
+                $('#productName').val(ui.item.name);
+                $('#quantity').focus();
+            }
+        }).data("autocomplete")._renderItem = function (ul, item) {
+            var accountstype = "";
+            if (item) {
+                accountstype = '<div style="font-size: 9px; color:#326E93;">' +" Code: " + item.code + ", Name: " + item.name + " Product Category: " + item.p_cat + ", Price: " + item.price + '</div>';
+            }
+            return $("<li></li>").data("item.autocomplete", item).append('<a>' + item['label'] + '</a>' + accountstype).appendTo(ul);
+        }
+    }
+
+    $('#search-btn-customer-product-id').click(function(){
+        CustomerInfo.popupProductListPanel($("#customerId").val());
+    });
+
+
+    function addFinishProductToGrid(){
+        var customerId = $("#customerId").val();
+        if(!customerId){
+            MessageRenderer.renderErrorText("Customer is not selected");
+            return
+        }
+        var productId = $("#productId").val();
+        if(!productId){
+            MessageRenderer.renderErrorText("ProductItem is not selected");
+            return
+        }
+
+        var totalQuantity = Number($("#quantity").val());
+        if(totalQuantity <= 0){
+            MessageRenderer.renderErrorText("Quantity is empty");
+            return
+        }
+        var productName = $("#productName").val();
+        var productCode = $("#productCode").val();
+        var unitPrice = Number($("#rate").val());
+        var qtyInLtr = Number($("#qtyInLtr").val());
+        var amount = unitPrice * totalQuantity;
+        var totalQtyInLtr = 0.00;
+        if(qtyInLtr != 0){
+            totalQtyInLtr = totalQuantity * qtyInLtr
+        }
+
+        var rowTo = jqGridProductList.getRowData(productId.toString());
+        if (!rowTo.id) {
+            var newRowData = [
+                { 'id':productId.toString(), 'retailOrderDetailsId': '', 'productCode':productCode.toString(), 'productName':productName.toString(),
+                    'qtyInLtr':totalQtyInLtr.toString(), 'quantity':totalQuantity.toString(),'qtyInLtrHidden':qtyInLtr, 'rate':unitPrice.toString(), 'amount':amount.toString(), 'delete': '<a  href="javascript:deleteProduct(' + productId + ')" class="ui-icon ui-icon-trash" title="Delete"></a>'}
+            ];
+            jqGridProductList.addRowData(productId.toString(), newRowData[0]);
+        }else{
+            rowTo.quantity = Number(rowTo.quantity) + totalQuantity;
+            rowTo.amount = Number(rowTo.amount) + amount;
+            $('#jqgrid-grid-finishProduct').jqGrid('setRowData', productId, rowTo);
+            MessageRenderer.renderErrorText("Product added on selected item");
+            calculateSummaryData();
+        }
+        clearProductItem();
+        $("#searchProductKey").focus();
+    }
+*/
+
+
+    function clearProductItem(){
+        $("#productId").val('');
+        $("#productName").val('');
+        $("#productCode").val('');
+        $("#rate").val('');
+        $("#qtyInLtr").val('');
+        $("#quantity").val('');
+        $('#searchProductKey').val('');
+    }
+
+    function deleteProduct(productId){
+        $('#jqgrid-grid-finishProduct').jqGrid('delRowData', productId);
+    }
+
+</script>

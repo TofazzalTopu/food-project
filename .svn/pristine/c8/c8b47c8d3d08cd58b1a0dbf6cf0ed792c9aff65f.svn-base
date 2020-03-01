@@ -1,0 +1,24 @@
+package com.bits.bdfp.promotion
+
+import com.docu.security.ApplicationUser
+
+class Promotion {
+    String          name
+    Date            effectiveFrom
+    Date            effectiveTo
+    boolean         isActive
+    ApplicationUser userCreated
+    ApplicationUser userUpdated
+    Date            dateCreated
+    Date            dateUpdated
+
+    static constraints = {
+        name(blank: false, nullable: false)
+        effectiveFrom(blank: false, nullable: false)
+        effectiveTo(blank: false, nullable: false)
+        userCreated(nullable: false)
+        userUpdated(nullable: true)
+        dateCreated(nullable: false)
+        dateUpdated(nullable: true)
+    }
+}
